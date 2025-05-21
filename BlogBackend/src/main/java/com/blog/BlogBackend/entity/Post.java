@@ -14,33 +14,39 @@ import java.util.Set;
 @Setter
 @Table(name="posts")
 @NoArgsConstructor
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long postId;
 
+    @NonNull
     @Column(name="post_title",length=120,nullable = false)
     private String title;
 
-    @Column(length = 1000)
-    private Date date;
-
-    @Column(length = 1000)
+    @NonNull
+    @Column(nullable = false, length = 1000)
     private String content;
 
-    @Column(length = 1000)
+    @NonNull
+    @Column(nullable = false, length = 1000)
     private String imageName;
 
-    @Column(length = 70)
+    @NonNull
+    @Column(nullable = false,length = 70)
     private String cuisine;
 
-    @Column
+    @NonNull
+    @Column(nullable = false)
     private Integer duration;
 
 
     private Integer countLike;
+
+    @Column(length = 1000)
+    private Date date;
+
 
 
     @ManyToOne
@@ -48,7 +54,7 @@ public class Post {
     private DifficultyCate difficultyCate;
 
     @ManyToOne
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "meal_id")
     private MealCate mealCate;
 
     @ManyToOne

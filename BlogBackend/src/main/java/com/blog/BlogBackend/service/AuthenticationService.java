@@ -6,6 +6,7 @@ import com.blog.BlogBackend.dto.VerifyDto;
 import com.blog.BlogBackend.entity.User;
 
 public interface AuthenticationService {
+
     User signup(RegisterDto input);
 
     User authenticate(LogInDto input);

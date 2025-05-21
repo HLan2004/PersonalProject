@@ -16,7 +16,9 @@ public interface PostService {
 
    public void delete(Long id);
 
-   public List<PostDto> getPostByCategory(Long id);
+   public List<PostDto> getPostByMealCate(Long id);
+
+   public List<PostDto> getPostByDifficultyCate(Long id);
 
    public List<PostDto> getPostByUser(Long id);
 }

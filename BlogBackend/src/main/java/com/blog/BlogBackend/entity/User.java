@@ -47,6 +47,15 @@ public class User implements UserDetails {
     private List<Post> postList = new ArrayList<>();
 
 
+    public String getBlogUsername() {
+        return this.username;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
 
     @Column(name = "verification_code")
     private String verificationCode;
@@ -62,6 +71,7 @@ public class User implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
     }
+
 
     @Override
     public boolean isAccountNonExpired() {
