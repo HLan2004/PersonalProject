@@ -23,35 +23,27 @@ public class PostController {
             @PathVariable Long userId,
             @PathVariable Long mealCateId,
             @PathVariable Long difficultyCateId) {
-
         System.out.println("Received body: " + postDto);
-
         PostDto savedPost = postService.createPost(postDto, userId, mealCateId, difficultyCateId);
         return new ResponseEntity<>(savedPost, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PostDto> updatePost(@RequestBody PostDto postDto, @PathVariable("id") Long id) {
-
         PostDto updatedPost = postService.updatePost(postDto, id);
-
         return new ResponseEntity<>(updatedPost, HttpStatus.OK);
 
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostDto> getByIdPost(@PathVariable("id") Long id) {
-
         PostDto postDto = postService.getByIdPost(id);
-
         return new ResponseEntity<>(postDto, HttpStatus.OK);
     }
 
     @GetMapping("/")
     public ResponseEntity<List<PostDto>> getAllPost() {
-
         List<PostDto> postDtoList = postService.getAllPost();
-
         return new ResponseEntity<>(postDtoList, HttpStatus.OK);
 
     }
@@ -64,26 +56,20 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePost(@PathVariable("id") Long id) {
-
         postService.delete(id);
-
         return ResponseEntity.ok("Post deleted successfully");
 
     }
 
     @GetMapping("/mealCategory/{mealCategoryId}")
-    public ResponseEntity<List<PostDto>> getPostByMealCate(@PathVariable("mealCategoryId") Long categoryid) {
-
-        List<PostDto> postDtoList = postService.getPostByMealCate(categoryid);
-
+    public ResponseEntity<List<PostDto>> getPostByMealCate(@PathVariable("mealCategoryId") Long categoryId) {
+        List<PostDto> postDtoList = postService.getPostByMealCate(categoryId);
         return new ResponseEntity<>(postDtoList, HttpStatus.OK);
     }
 
     @GetMapping("/difficultyCategory/{difficultyCategoryId}")
-    public ResponseEntity<List<PostDto>> getPostByDifficultyCate(@PathVariable("difficultyCategoryId") Long categoryid) {
-
-        List<PostDto> postDtoList = postService.getPostByDifficultyCate(categoryid);
-
+    public ResponseEntity<List<PostDto>> getPostByDifficultyCate(@PathVariable("difficultyCategoryId") Long categoryId) {
+        List<PostDto> postDtoList = postService.getPostByDifficultyCate(categoryId);
         return new ResponseEntity<>(postDtoList, HttpStatus.OK);
     }
 }

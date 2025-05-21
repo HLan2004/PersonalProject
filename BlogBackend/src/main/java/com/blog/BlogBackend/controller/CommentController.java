@@ -1,10 +1,8 @@
 package com.blog.BlogBackend.controller;
 
 
-import com.blog.BlogBackend.dto.ApiResponse;
 import com.blog.BlogBackend.dto.CommentDto;
 import com.blog.BlogBackend.service.CommentService;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +22,7 @@ public class CommentController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteComment(@PathVariable Long id) {
+    public ResponseEntity<?> deleteComment(@PathVariable Long id) {
         commentService.deleteComment(id);
         return ResponseEntity.ok("Comment deleted successfully");
     }
