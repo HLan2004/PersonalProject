@@ -1,6 +1,5 @@
 package com.blog.BlogBackend.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,8 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LogInDto {
-
-    private String email;
-    private String password;
+public class InstructionDto {
+    private String step;
+    private String image;
 }

@@ -15,9 +15,6 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepo userRepository;
 
-    public List<User> allUsers() {
-        return new ArrayList<>(userRepository.findAll());
-    }
 
 
 }

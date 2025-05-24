@@ -6,19 +6,21 @@ import java.util.List;
 
 public interface PostService {
 
-   public PostDto createPost(PostDto postdto, Long userId, Long mealCateRepoId, Long difficultyCateRepoId);
+   PostDto createPost(PostDto postdto, Long userId, Long mealCateRepoId, Long difficultyCateRepoId);
 
-   public PostDto updatePost(PostDto postdto,Long id);
+   PostDto updatePost(PostDto postdto,Long id);
 
-   public PostDto getByIdPost(Long id);
+   PostDto getByIdPost(Long id);
 
-   public List<PostDto> getAllPost();
+   List<PostDto> getAllPost();
 
-   public void delete(Long id);
+   void delete(Long id);
 
-   public List<PostDto> getPostByMealCate(Long id);
+   List<PostDto> getPostByMealCate(Long id);
 
-   public List<PostDto> getPostByDifficultyCate(Long id);
+   List<PostDto> getPostByDifficultyCate(Long id);
 
-   public List<PostDto> getPostByUser(Long id);
+   List<PostDto> getPostByUser(Long id);
+
+   void likePost(Long id, Long userId);
 }

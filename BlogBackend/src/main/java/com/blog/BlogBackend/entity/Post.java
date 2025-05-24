@@ -3,7 +3,6 @@ package com.blog.BlogBackend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Formula;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -27,10 +26,6 @@ public class Post {
 
     @NonNull
     @Column(nullable = false, length = 1000)
-    private String content;
-
-    @NonNull
-    @Column(nullable = false, length = 1000)
     private String imageName;
 
     @NonNull
@@ -41,8 +36,16 @@ public class Post {
     @Column(nullable = false)
     private Integer duration;
 
+    @NonNull
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "content_id", referencedColumnName = "id")
+    private Content content;
+
 
     private Integer countLike;
+
+    @ElementCollection
+    private Set<Long> likedUserIds = new HashSet<>();
 
     @Column(length = 1000)
     private Date date;

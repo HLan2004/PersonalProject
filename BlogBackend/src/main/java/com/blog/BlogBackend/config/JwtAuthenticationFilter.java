@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("[DEBUG] Filter is running. Request: " + request.getRequestURI());
 
         final String authHeader = request.getHeader("Authorization");
+        System.out.println("[DEBUG] Authorization header: " + authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             System.out.println("[DEBUG] No valid Authorization header found.");
@@ -50,6 +51,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // ✅ Kiểm tra đúng cách
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                System.out.println("[DEBUG] User authorities: " + userDetails.getAuthorities());
+
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =

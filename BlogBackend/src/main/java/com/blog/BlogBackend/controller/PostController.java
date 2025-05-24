@@ -3,6 +3,7 @@ package com.blog.BlogBackend.controller;
 
 import com.blog.BlogBackend.dto.PostDto;
 import com.blog.BlogBackend.service.PostService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/post")
 public class PostController {
 
@@ -71,5 +73,17 @@ public class PostController {
     public ResponseEntity<List<PostDto>> getPostByDifficultyCate(@PathVariable("difficultyCategoryId") Long categoryId) {
         List<PostDto> postDtoList = postService.getPostByDifficultyCate(categoryId);
         return new ResponseEntity<>(postDtoList, HttpStatus.OK);
+    }
+
+    @PutMapping("/user/{userId}/like/{id}")
+    public ResponseEntity<?> likePost(@PathVariable Long id, @PathVariable Long userId) {
+        try {
+            postService.likePost(id, userId);
+            return ResponseEntity.ok("Post liked successfully");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }

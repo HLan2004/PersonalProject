@@ -1,5 +1,7 @@
 package com.blog.BlogBackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,6 +33,7 @@ public class User implements UserDetails {
     private String email;
 
     @NonNull
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false, length = 100)
     private String password;
 
@@ -42,7 +45,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String about;
 
-    @NonNull
+    @JsonIgnore
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Post> postList = new ArrayList<>();
 
@@ -69,7 +72,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(() -> "ROLE_USER");
     }
 
 
