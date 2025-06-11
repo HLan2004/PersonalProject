@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
     CloseIcon,
-    FacebookIcon,
-    InstagramIcon,
     MenuIcon,
     SearchIcon,
-    TwitterIcon,
-    UpArrowIcon,
+    CreatePostIcon, LogInIcon, LogOutIcon, // Changed from UpArrowIcon to LogoutIcon
 } from "./Icon.jsx";
-import { Blogger } from "../service/BloggerService.js";
+import { fetchCurrentUser } from "../service/users";
+import {useNavigate} from "react-router-dom";
+import {logout} from "../service/auth.js";
 
 // Position it absolute so it doesn't affect the layout flow
 const AppSidebarWrapper = styled.div`
@@ -21,6 +20,7 @@ const AppSidebarWrapper = styled.div`
     flex-direction: row-reverse;
     z-index: 10;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    border-left: 3px solid #e8e8e8;
 
     /* when closed, only cover the 80px sidebar; when open, expand to show both panels */
     width: ${(props) => (props.isOpen ? "475px" : "80px")};
@@ -48,7 +48,7 @@ const SidebarContainer = styled.aside`
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem 0;
+    padding: 0;
     box-shadow: ${(props) =>
             props.isOpen
                     ? "-2px 0 10px rgba(0, 0, 0, 0.1)"
@@ -59,51 +59,58 @@ const SidebarContainer = styled.aside`
     transition: all 0.3s ease-in-out;
 `;
 
+
+
 const Button = styled.button`
     background-color: ${(props) => props.bgColor || "#ffd97d"};
     border: none;
-    width: ${(props) => props.size || "50px"};
-    height: ${(props) => props.size || "50px"};
-    border-radius: 5px;
+    width: 80px; /* Full width to touch edges */
+    height: 80px; /* Square shape */
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    margin-bottom: 1rem;
+    margin: 0; /* Remove all margins to make buttons touch */
+    border-radius: 0; /* Remove border radius to make it square */
 
     &:hover {
         background-color: ${(props) => props.hoverColor || "#ffca45"};
     }
 `;
 
-const SocialLinks = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    flex: 1;
-    padding: 2rem 0;
-
-    a {
-        margin-bottom: 1.5rem;
-        color: #333;
-
-        &:hover {
-            color: #e74c3c;
-        }
-    }
-`;
-
-const ScrollToTopButton = styled(Button)`
-    background-color: #e74c3c;
-    color: white;
-    margin-top: auto;
-    margin-bottom: 2rem;
+const MenuButton = styled(Button)`
+    background-color: ${(props) => props.bgColor || "#f5f5f5"};
 
     &:hover {
-        background-color: #c0392b;
+        background-color: ${(props) => props.hoverColor || "#eee"};
     }
 `;
+
+const CreatePostButton = styled(Button)`
+    background-color: #f5f5f5;
+    color: #777;
+    margin-top: auto;
+
+
+    &:hover {
+        background-color: #eee;
+    }
+`;
+
+const AuthButton = styled(Button)`
+    background-color: ${props => props.user ? '#e74c3c' : '#3498db'};
+    color: white;
+    margin-bottom: 0;
+    border-radius: 0;
+    width: 80px;
+    height: 80px;
+
+    &:hover {
+        background-color: ${props => props.user ? '#c0392b' : '#2980b9'};
+    }
+`;
+
+
 
 const ProfilePanel = styled.div`
     background-color: white;
@@ -127,9 +134,9 @@ const ProfileHeader = styled.div`
 `;
 
 const ProfileImageBorder = styled.div`
-    width: 170px;
-    height: 170px;
-    border: 1px solid #ffd97d;
+    width: 80%;
+    height: 325px;
+    border: 2.5px solid #ffd97d;
     border-radius: 4px;
     padding: 5px;
     position: relative;
@@ -191,54 +198,58 @@ const ProfileBio = styled.p`
     text-align: left;
     margin: 10px 0 0;
     font-size: 1rem;
-    max-width: 90%;
+    max-width: 80%;
 `;
 
-const CategorySection = styled.div`
-    width: 100%;
-    margin-top: auto;
-    border-top: 1px solid #f0f0f0;
-    padding-top: 1rem;
-    position: relative;
-
-    &:before {
-        content: "";
-        position: absolute;
-        width: 50%;
-        height: 4px;
-        background-color: #ffd97d;
-        top: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-`;
-
-const CategoryTitle = styled.h3`
-    font-size: 0.85rem;
-    color: #999;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-align: center;
-    position: relative;
-    margin: 0 0 1rem;
-    font-weight: 600;
-`;
-
-const RightSidebar = ({ scrollToTop, onToggle }) => {
+const RightSidebar = ({ onToggle, onLogout }) => { // Changed from scrollToTop to onLogout prop
     const [isOpen, setIsOpen] = useState(false);
-    const [bloggers, setBloggers] = useState([]);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
         onToggle(isOpen);
     }, [isOpen, onToggle]);
 
-    useEffect(() => {
-        Blogger()
-            .then((response) => setBloggers(response.data))
-            .catch((error) => console.error(error));
-    }, []);
-
     const toggleSidebar = () => setIsOpen((prev) => !prev);
+
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        if (user) {
+            // User is logged in, perform logout
+            if (onLogout) {
+                onLogout();
+            } else {
+                logout();
+            }
+            navigate("/app");
+        } else {
+            navigate("/auth");
+        }
+    };
+
+
+
+    const handleCreatePost = () => {
+        navigate("/app/create-post");
+    };
+
+
+    useEffect(() => {
+        fetchCurrentUser()
+            .then(response => {
+                if (response && response.data) {
+                    const current = response.data;
+                    current.blogUsername = current.username;
+                    current.blogEmail    = current.email;
+                    setUser(current);
+
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load user:", err);
+                setUser(null);
+            });
+    }, []);
 
     return (
         <AppSidebarWrapper isOpen={isOpen}>
@@ -248,34 +259,31 @@ const RightSidebar = ({ scrollToTop, onToggle }) => {
                         <ProfileImageBorder>
                             <ProfileImage>
                                 <img
-                                    src="/api/placeholder/160/160"
-                                    alt="Melany Rose"
+                                    src={
+                                        user?.imageData
+                                            ? `data:${user.imageType};base64,${user.imageData}`
+                                            : "/api/placeholder/160/160"
+                                    }
+                                    alt="Profile"
                                 />
                             </ProfileImage>
+
                         </ProfileImageBorder>
 
                         <ProfileName>
-                            {bloggers.length > 0
-                                ? bloggers.map((b) => `${b.firstName} ${b.lastName}`)
-                                : "Melany Rose"}
+                            {user ? `${user.blogUsername}` : "Guest User"}
                         </ProfileName>
 
                         <ProfileEmail>
-                            {bloggers.length > 0
-                                ? bloggers.map((b) => b.email)
-                                : "melanyfoodrecipes@gmail.com"}
+                            {user ? user.blogEmail : "guest@example.com"}
                         </ProfileEmail>
 
                         <ProfileBio>
-                            Come join me in my culinary adventures where we'll be using simple,
-                            fresh ingredients and transforming them into sophisticated and
-                            elegant meals for the everyday home cook.
+                            {user
+                                ? user.about || "Welcome to your dashboard!"
+                                : "Loading your profile..."}
                         </ProfileBio>
                     </ProfileHeader>
-
-                    <CategorySection>
-                        <CategoryTitle>CATEGORIES</CategoryTitle>
-                    </CategorySection>
                 </ProfilePanel>
 
                 <SidebarContainer isOpen={isOpen}>
@@ -283,25 +291,24 @@ const RightSidebar = ({ scrollToTop, onToggle }) => {
                         <SearchIcon />
                     </Button>
 
-                    <Button
+                    <MenuButton
                         bgColor={isOpen ? "#e8e8e8" : "#f5f5f5"}
-                        size="40px"
                         hoverColor={isOpen ? "#ddd" : "#eee"}
                         onClick={toggleSidebar}
                     >
                         {isOpen ? <CloseIcon /> : <MenuIcon />}
-                    </Button>
+                    </MenuButton>
 
-                    <SocialLinks>
-                        <a href="#"><FacebookIcon /></a>
-                        <a href="#"><TwitterIcon /></a>
-                        <a href="#"><InstagramIcon /></a>
-                    </SocialLinks>
+                    <CreatePostButton onClick={handleCreatePost}>
+                        <CreatePostIcon />
+                    </CreatePostButton>
 
-                    <ScrollToTopButton size="40px" onClick={scrollToTop}>
-                        <UpArrowIcon />
-                    </ScrollToTopButton>
+                    <AuthButton user={user} size="40px" onClick={handleLogout}>
+                        {user ? <LogOutIcon /> : <LogInIcon />}
+                    </AuthButton>
+
                 </SidebarContainer>
+
             </SlidingContainer>
         </AppSidebarWrapper>
     );

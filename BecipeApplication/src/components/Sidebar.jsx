@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+
+import React, {useEffect, useState} from "react";
 import styled from "styled-components";
 import logoImage from "../assets/trans_bg_logo.png";
+import {useNavigate, useLocation} from "react-router-dom";
+import {fetchTrendingPost} from "../service/posts.js";
 
 const SidebarWrapper = styled.div`
     position: relative;
@@ -66,7 +69,7 @@ const CrownIcon = styled.div`
 `;
 
 const NavMenu = styled.nav`
-    padding: 0.5rem 0;
+    padding: 0.85rem 0;
     text-align: center;
 
     ul {
@@ -119,12 +122,8 @@ const NavMenu = styled.nav`
     }
 `;
 
-// Option 1: Remove flex-grow and overflow from WeeklyRecipesSection so that its height is dictated solely by its content.
 const WeeklyRecipesSection = styled.div`
     padding: 0.5rem 1rem;
-    /* Remove flex properties and overflow so that content is fully visible */
-    /* flex-grow: 1; */
-    /* overflow: hidden; */
 
     h3 {
         margin: 0 auto 10px;
@@ -148,6 +147,7 @@ const WeeklyRecipeItem = styled.fieldset`
     padding: 0;
     margin: 0;
     overflow: hidden;
+    height: 180px;
 
     legend {
         position: absolute;
@@ -173,21 +173,83 @@ const WeeklyRecipeItem = styled.fieldset`
 
 const RecipeTitle = styled.h4`
     font-size: 1.2rem;
-    margin: 0.75rem 0 0;
+    margin: 0.75rem 100px 0 0;
     font-weight: 480;
     text-align: left;
-    
+
 `;
-
-
 
 const Sidebar = () => {
     const [activeNav, setActiveNav] = useState("Home");
+    const [trendingPost, setTrendingPost] = useState({
+        imageData: '',
+        imageType: '',
+        cuisine: 'Loading...',
+        title: 'Loading...'
+    });
+
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const getActiveNavFromPath = (pathname) => {
+        if (pathname === '/app' || pathname === '/app/') {
+            return 'Home';
+        } else if (pathname === '/app/recipes') {
+            return 'Recipes';
+        } else if (pathname === '/app/calendar') {
+            return 'Calendar';
+        }
+        return 'Home'; // default
+    };
+
+    useEffect(() => {
+        const currentActiveNav = getActiveNavFromPath(location.pathname);
+        setActiveNav(currentActiveNav);
+    }, [location.pathname]);
+
+    const handleNavigateApp = () => {
+        setActiveNav("Home");
+        navigate("/app");
+    };
+
+    const handleNavClick = (label, path) => {
+        setActiveNav(label);
+        navigate(path);
+    };
+
+    useEffect(() => {
+        fetchTrendingPost()
+            .then(response => {
+                if (response.data) {
+                    setTrendingPost(response.data);
+                } else {
+                    setTrendingPost({
+                        imageData: '',
+                        imageType: '',
+                        cuisine: 'No cuisine found',
+                        title: 'No trending post'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching trending post:', error);
+                setTrendingPost({
+                    imageData: '',
+                    imageType: '',
+                    cuisine: 'Error loading cuisine',
+                    title: 'Error loading post'
+                });
+            });
+    }, []);
+
+    const imageUrl = trendingPost.imageData
+        ? `data:${trendingPost.imageType || 'image/jpeg'};base64,${trendingPost.imageData}`
+        : "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 
     return (
         <SidebarWrapper>
             <SidebarContainer>
-                <Logo>
+                <Logo onClick={handleNavigateApp}>
                     <img src={logoImage} alt="Recipe" />
                 </Logo>
 
@@ -197,21 +259,22 @@ const Sidebar = () => {
                     <ul>
                         <li
                             className={activeNav === "Home" ? "active" : ""}
-                            onClick={() => setActiveNav("Home")}
+                            onClick={() => handleNavClick("Home", "/app")}
                         >
                             Home
                         </li>
                         <li
                             className={activeNav === "Recipes" ? "active" : ""}
-                            onClick={() => setActiveNav("Recipes")}
+                            onClick={() => handleNavClick("Recipes", "/app/recipes")}
                         >
                             Recipes
                         </li>
+
                         <li
-                            className={activeNav === "Pages" ? "active" : ""}
-                            onClick={() => setActiveNav("Pages")}
+                            className={activeNav === "Calendar" ? "active" : ""}
+                            onClick={() => handleNavClick("Calendar", "/app/calendar")}
                         >
-                            Pages <span>›</span>
+                            Calendar
                         </li>
                         <li
                             className={activeNav === "About" ? "active" : ""}
@@ -244,13 +307,13 @@ const Sidebar = () => {
                     <h3>THIS WEEK'S RECIPES</h3>
                     <RecipeItemContainer>
                         <WeeklyRecipeItem>
-                            <legend>LUNCH</legend>
+                            <legend>{trendingPost.cuisine ? String(trendingPost.cuisine).toUpperCase() : 'NO CUISINE'}</legend>
                             <img
-                                src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                                alt="Thai Basil Chicken"
+                                src={imageUrl}
+                                alt={trendingPost.title || 'Recipe image'}
                             />
                         </WeeklyRecipeItem>
-                        <RecipeTitle>The Best Classic Hamburger Recipe</RecipeTitle>
+                        <RecipeTitle>{trendingPost.title || 'No title available'}</RecipeTitle>
                     </RecipeItemContainer>
                 </WeeklyRecipesSection>
 
