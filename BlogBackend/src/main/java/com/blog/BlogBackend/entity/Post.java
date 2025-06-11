@@ -4,9 +4,7 @@ package com.blog.BlogBackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Getter
@@ -24,9 +22,15 @@ public class Post {
     @Column(name="post_title",length=120,nullable = false)
     private String title;
 
+    @Lob
+    @Column(name = "image_data",
+            columnDefinition = "LONGBLOB",
+            nullable = false)
     @NonNull
-    @Column(nullable = false, length = 1000)
-    private String imageName;
+    private byte[] imageData;
+
+    @Column(name="image_type", length=100, nullable=false)
+    private String imageType;
 
     @NonNull
     @Column(nullable = false,length = 70)
@@ -37,10 +41,16 @@ public class Post {
     private Integer duration;
 
     @NonNull
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "content_id", referencedColumnName = "id")
-    private Content content;
+    @Column(nullable = false, length = 1000)
+    private String description;
 
+    @ElementCollection
+    @CollectionTable(name = "post_ingredients", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "ingredient", nullable = false)
+    private List<String> ingredients = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Instruction> instructions = new ArrayList<>();
 
     private Integer countLike;
 
@@ -50,12 +60,12 @@ public class Post {
     @Column(length = 1000)
     private Date date;
 
-
-
+    @NonNull
     @ManyToOne
     @JoinColumn(name = "difficulty_id")
     private DifficultyCate difficultyCate;
 
+    @NonNull
     @ManyToOne
     @JoinColumn(name = "meal_id")
     private MealCate mealCate;

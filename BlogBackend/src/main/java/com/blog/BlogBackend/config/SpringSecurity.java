@@ -23,6 +23,7 @@ public class SpringSecurity {
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private JwtActivityFilter jwtActivityFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -32,13 +33,13 @@ public class SpringSecurity {
 
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/user/**").authenticated() // your protected user endpoints
+                        .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/post/**").permitAll()
-                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/categories/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
-
+                .addFilterBefore(jwtActivityFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )

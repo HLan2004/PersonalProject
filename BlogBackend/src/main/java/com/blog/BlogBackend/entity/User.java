@@ -39,11 +39,14 @@ public class User implements UserDetails {
 
     @NonNull
     @Column(nullable = false)
-    private String imageName;
-
-    @NonNull
-    @Column(nullable = false)
     private String about;
+
+    @Lob
+    @Column(name = "image_data", columnDefinition = "LONGBLOB")
+    private byte[] imageData;
+
+    @Column(name = "image_type")
+    private String imageType;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,fetch = FetchType.LAZY)

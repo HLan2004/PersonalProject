@@ -11,9 +11,12 @@ import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -35,10 +38,42 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
 
+    public Long getCurrentUserId() {
+        try {
+            User currentUser = (User) SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+            return currentUser != null ? currentUser.getId() : null; // Use getId() instead of getUserId()
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public User getCurrentUser() {
+        try {
+            return (User) SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
 
-    public User signup(RegisterDto input) {
-        User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()), input.getImageName(), input.getAbout());
+
+
+
+    public User signup(RegisterDto input, MultipartFile imageFile) {
+        User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()),input.getAbout());
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                user.setImageData(imageFile.getBytes());
+                user.setImageType(imageFile.getContentType());
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read image file", e);
+            }
+        }
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEnabled(false);

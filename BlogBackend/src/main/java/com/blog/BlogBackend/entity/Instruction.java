@@ -16,12 +16,18 @@ public class Instruction {
     private Long id;
 
     @Column(nullable = false, length = 1000)
-    private String step;
+    private String stepDescription;
 
-    @Column
-    private String image;
+    private Integer stepOrder;
+
+    @Lob
+    @Column(name="step_image_data", columnDefinition="LONGBLOB")
+    private byte[] stepImageData;
+
+    @Column(name="step_image_type", length=100)
+    private String stepImageType;
 
     @ManyToOne
-    @JoinColumn(name = "content_id")
-    private Content content;
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 }

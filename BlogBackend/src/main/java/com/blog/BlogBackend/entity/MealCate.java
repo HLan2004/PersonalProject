@@ -1,6 +1,7 @@
 package com.blog.BlogBackend.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,10 +21,11 @@ public class MealCate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
     private String mealCateTitle;
 
 
+    @JsonIgnore
     @OneToMany(mappedBy = "mealCate",cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Post> mealCateList = new ArrayList<>();
 

@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -28,7 +29,7 @@ public class RegisterDto {
     @Size(min=4,max = 10,message = "password must be minimum 4 characters and garater 10 characters")
     private String password;
 
-    private String imageName;
+    private MultipartFile imageFile;
 
     @NotNull
     private String about;

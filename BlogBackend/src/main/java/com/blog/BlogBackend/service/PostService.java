@@ -1,7 +1,9 @@
 package com.blog.BlogBackend.service;
 
 import com.blog.BlogBackend.dto.PostDto;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface PostService {
@@ -22,5 +24,11 @@ public interface PostService {
 
    List<PostDto> getPostByUser(Long id);
 
-   void likePost(Long id, Long userId);
+   void toggleLike(Long id, Long userId);
+
+   PostDto getMostLikedPostLastWeek();
+
+   List<PostDto> getFilteredPosts(Long mealCategoryId, Long difficultyCategoryId);
+
+   List<PostDto> searchPosts(String title, Long mealCategoryId, Long difficultyCategoryId);
 }
