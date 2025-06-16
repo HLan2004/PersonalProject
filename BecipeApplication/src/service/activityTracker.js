@@ -13,7 +13,6 @@ class ActivityTracker {
         this.isTracking = true
         this.resetActivityTimer()
 
-        // Add event listeners for user activity
         const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
 
         events.forEach(event => {
@@ -29,7 +28,6 @@ class ActivityTracker {
         this.isTracking = false
         this.clearActivityTimer()
 
-        // Remove event listeners
         const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
 
         events.forEach(event => {
@@ -61,10 +59,8 @@ class ActivityTracker {
 
     async handleInactiveLogout() {
         this.stopTracking()
-        // Redirect về auth, không show notification
         await logout(false, true)
     }
 }
 
-// Export singleton instance
 export default new ActivityTracker()

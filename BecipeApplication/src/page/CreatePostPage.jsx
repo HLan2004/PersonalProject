@@ -8,8 +8,34 @@ import {fetchCurrentUser} from "../service/users.js";
 // Styled Components
 const CreatePostContainer = styled.div`
     max-width: 100vw;
+    max-height: 100vh;
     margin: 20px 90px 0 27px;
     padding: 20px 20px 40px;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    overflow-x: hidden;
+
+    &::-webkit-scrollbar {
+        width: 10px;
+        position: absolute;
+        right: -10px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
 `;
 
 const FormContainer = styled.div`

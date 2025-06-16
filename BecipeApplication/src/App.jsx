@@ -10,10 +10,11 @@ import PostPage from "./page/PostPage";
 import RecipePage from "./page/RecipePage";
 import CalendarPage from "./page/CalendarPage";
 import CreatePostPage from "./page/CreatePostPage";
-
-// Import your auth services
 import { isAuthenticated, logout } from "./service/auth";
 import activityTracker from "./service/activityTracker";
+import UserRecipePage from "./page/UserRecipePage";
+import UserPage from "./page/UserPage.jsx";
+import UpdateUserPage from "./page/UpdateUserPage.jsx";
 
 const AppContainer = styled.div`
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -37,7 +38,6 @@ const MainContent = styled.main`
     transition: filter 0.3s ease-in-out, opacity 0.3s ease-in-out;
 `;
 
-// Protected Route Component
 function ProtectedRoute({ children }) {
     if (!isAuthenticated()) {
         return <Navigate to="/auth" replace />;
@@ -49,14 +49,12 @@ function Layout() {
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
     const navigate = useNavigate();
 
-    // Initialize activity tracking when layout mounts (user is authenticated)
     useEffect(() => {
         if (isAuthenticated()) {
             activityTracker.startTracking();
             console.log('Activity tracking started for authenticated user');
         }
 
-        // Cleanup when layout unmounts
         return () => {
             activityTracker.stopTracking();
             console.log('Activity tracking stopped');
@@ -65,17 +63,13 @@ function Layout() {
 
     const handleLogout = async () => {
         try {
-            // Stop activity tracking
             activityTracker.stopTracking();
-
-            // Call backend logout and clear tokens
             await logout();
 
             console.log('User logged out successfully');
             navigate('/auth');
         } catch (error) {
             console.error('Logout error:', error);
-            // Even if backend call fails, navigate to auth
             navigate('/auth');
         }
     };
@@ -112,25 +106,25 @@ function Layout() {
 function App() {
     return (
         <Routes>
-            {/* Public route for authentication */}
             <Route path="/auth" element={<Auth />} />
 
-            {/* Redirect root to app by default */}
             <Route
                 path="/"
                 element={<Navigate to="/app" replace />}
             />
 
-            {/* Public routes - no authentication required */}
             <Route path="/app" element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="post/:id" element={<PostPage />} />
                 <Route path="create-post" element={<CreatePostPage />} />
                 <Route path="recipes" element={<RecipePage />} />
                 <Route path="calendar" element={<CalendarPage />} />
+                <Route path="user-recipes/:categoryId" element={<UserRecipePage />} />
+                <Route path="profile" element={<UserPage />} />
+                <Route path="profile/edit" element={<UpdateUserPage />} />
+                <Route path="/app/user/:userId" element={<UserPage />} />
             </Route>
 
-            {/* Catch all - redirect to app */}
             <Route
                 path="*"
                 element={<Navigate to="/app" replace />}

@@ -198,6 +198,8 @@ const Sidebar = () => {
             return 'Recipes';
         } else if (pathname === '/app/calendar') {
             return 'Calendar';
+        } else if (pathname === '/app/profile') {
+            return 'About';
         }
         return 'Home'; // default
     };
@@ -278,7 +280,7 @@ const Sidebar = () => {
                         </li>
                         <li
                             className={activeNav === "About" ? "active" : ""}
-                            onClick={() => setActiveNav("About")}
+                            onClick={() => handleNavClick("About", "/app/profile")}
                         >
                             About
                         </li>

@@ -18,6 +18,9 @@ export const fetchTrendingPost = () =>
 export const likePost = (postId) =>
     api.put(`/post/${postId}/toggle-like`)
 
+export const deleteMultiplePosts = (postIds) =>
+    api.delete('/post/bulk', { data: postIds })
+
 export const fetchFilteredPosts = async (mealCategoryId, difficultyCategoryId) => {
     const params = new URLSearchParams();
     if (mealCategoryId) params.append('mealCategoryId', mealCategoryId);

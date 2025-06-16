@@ -14,12 +14,19 @@ const GridContainer = styled.div`
 // Card container
 const Card = styled.div`
     background: #ffffff;
-    border-radius: 8px;
+    border-radius: 5px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    cursor: pointer;
+    cursor: ${props => props.selectionMode ? 'default' : 'pointer'};
+    position: relative;
+
+    ${props => props.isSelected && `
+        box-shadow: 0 0 0 3px #ff8c42, 0 2px 15px rgba(0, 0, 0, 0.05);
+        background-color: #fdf2f2;
+    `}
+
     transition: transform 0.3s;
 
     &:hover {
@@ -27,10 +34,25 @@ const Card = styled.div`
     }
 `;
 
+// Add these new styled components at the top with your existing ones
+const CheckboxWrapper = styled.div`
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+`;
+
+const SelectionCheckbox = styled.input`
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #ff8c42;
+`;
+
 // Image section with background image
 const ImageContainer = styled.div`
     position: relative;
-    width: 100%;
+    width: 98.5%;
     height: 220px;
     background-image: url('${props => props.image}');
     background-repeat: no-repeat;
@@ -41,6 +63,8 @@ const ImageContainer = styled.div`
     justify-content: center;
     border: 2px solid #ffd97d;
 `;
+
+
 
 const CategoryBadge = styled.span`
     background: #f5b800;
@@ -113,7 +137,7 @@ const LikeButton = styled.div`
     }
 `;
 
-const RecipeCardBlog = ({ recipe, onLikeUpdate }) => {
+const RecipeCardBlog = ({ recipe, onLikeUpdate, selectionMode, isSelected, onSelect }) => {
     const navigate = useNavigate();
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
@@ -161,8 +185,38 @@ const RecipeCardBlog = ({ recipe, onLikeUpdate }) => {
         }
     };
 
+    const handleCardClick = (e) => {
+        if (selectionMode) {
+            e.preventDefault();
+            e.stopPropagation();
+            onSelect(recipe.postId);
+        } else {
+            navigate(`/app/post/${recipe.postId}`);
+        }
+    };
+
+    const handleCheckboxChange = (e) => {
+        e.stopPropagation();
+        onSelect(recipe.postId);
+    };
+
+
     return (
-        <Card onClick={() => navigate(`/app/post/${postId}`)}>
+        <Card
+            onClick={handleCardClick}
+            selectionMode={selectionMode}
+            isSelected={isSelected}
+        >
+            {selectionMode && (
+                <CheckboxWrapper>
+                    <SelectionCheckbox
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={handleCheckboxChange}
+                    />
+                </CheckboxWrapper>
+            )}
+
             <ImageContainer image={imageUrl}>
                 <CategoryBadge>
                     {String(cuisine).toUpperCase()}
@@ -171,18 +225,19 @@ const RecipeCardBlog = ({ recipe, onLikeUpdate }) => {
             <Title>{title}</Title>
             <InfoBar difficulty={difficulty}>
                 <InfoItem>
-                    <FaClock /> {duration} MIN
+                    <FaClock /> {duration} MINS
                 </InfoItem>
                 <LikeButton isLiked={isLiked} onClick={handleLike}>
                     {isLiked ? <FaHeart /> : <FaRegHeart />}
-                    {likeCount} LIKE
+                    {likeCount} LIKES
                 </LikeButton>
             </InfoBar>
         </Card>
     );
 }
 
-const RecipeCard = () => {
+
+const RecipeCard = ({ posts = null, selectionMode = false, selectedPosts = new Set(), onPostSelect }) => {
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -202,6 +257,9 @@ const RecipeCard = () => {
     };
 
     const handleFilterChange = async (filters) => {
+        // Only fetch if no posts prop is provided (for general use)
+        if (posts) return;
+
         setLoading(true);
         setError(null);
         try {
@@ -219,6 +277,13 @@ const RecipeCard = () => {
     };
 
     useEffect(() => {
+        if (posts) {
+            setRecipes(posts);
+            setLoading(false);
+            return;
+        }
+
+        // Otherwise, use the filter system
         if (!window.recipeFilters) {
             window.recipeFilters = {
                 mealCategory: '',
@@ -240,7 +305,7 @@ const RecipeCard = () => {
                 listener => listener !== handleFilterChange
             );
         };
-    }, []);
+    }, [posts]);
 
     if (loading) return <div style={{ textAlign: 'center', padding: '20px' }}>Loading recipes…</div>;
     if (error) return <div style={{ color: "red", textAlign: 'center', padding: '20px' }}>Error: {error}</div>;
@@ -253,6 +318,9 @@ const RecipeCard = () => {
                         key={r.postId || i}
                         recipe={r}
                         onLikeUpdate={handleLikeUpdate}
+                        selectionMode={selectionMode}
+                        isSelected={selectedPosts.has(r.postId)}
+                        onSelect={onPostSelect}
                     />
                 ))
             ) : (
