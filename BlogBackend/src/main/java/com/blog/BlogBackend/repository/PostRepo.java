@@ -13,11 +13,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PostRepo extends JpaRepository<Post, Long> {
-    List<Post> findByMealCate(MealCate mealCate);
-    List<Post> findByDifficultyCate(DifficultyCate difficultyCate);
     List<Post> findByUser(User user);
     Optional<Post> findById(Long id);
     Optional<Post> findFirstByDateAfterOrderByCountLikeDesc(Date date);
+    List<Post> findByUserAndMealCate(User user, MealCate mealCate);
 
     @Query("SELECT p FROM Post p WHERE " +
             "(:mealCate IS NULL OR p.mealCate = :mealCate) AND " +
@@ -34,5 +33,7 @@ public interface PostRepo extends JpaRepository<Post, Long> {
             @Param("title") String title,
             @Param("mealCate") MealCate mealCate,
             @Param("difficultyCate") DifficultyCate difficultyCate);
+
+
 
 }

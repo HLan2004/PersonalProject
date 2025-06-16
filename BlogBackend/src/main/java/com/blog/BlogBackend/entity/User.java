@@ -25,7 +25,7 @@ public class User implements UserDetails {
     private Long id;
 
     @NonNull
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String username;
 
     @NonNull
@@ -51,6 +51,16 @@ public class User implements UserDetails {
     @JsonIgnore
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private List<Post> postList = new ArrayList<>();
+
+    // Following relationships
+    @JsonIgnore
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Follow> following = new ArrayList<>();
+
+    // Followers relationships
+    @JsonIgnore
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Follow> followers = new ArrayList<>();
 
 
     public String getBlogUsername() {

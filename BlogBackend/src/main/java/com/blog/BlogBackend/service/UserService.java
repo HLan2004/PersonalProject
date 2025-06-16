@@ -12,4 +12,8 @@ public interface UserService {
     UserDto updateProfile(UserDto userDto);
 
     UserDto toDto(User user);
+
+    User findById(Long id);
+
+    List<UserDto> searchUsersByUsername(String username);
 }

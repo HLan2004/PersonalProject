@@ -3,17 +3,18 @@ package com.blog.BlogBackend.service.impl;
 
 import com.blog.BlogBackend.dto.UserDto;
 import com.blog.BlogBackend.entity.User;
+import com.blog.BlogBackend.exception.ResourceNotFoundException;
 import com.blog.BlogBackend.repository.UserRepo;
 import com.blog.BlogBackend.service.UserService;
 import lombok.AllArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -38,6 +39,25 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepo.save(currentUser);
         return toDto(savedUser);
+    }
+
+    @Override
+    public User findById(Long id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    }
+
+
+    @Override
+    public List<UserDto> searchUsersByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return List.of();
+        }
+
+        List<User> users = userRepo.findByUsernameContainingIgnoreCase(username.trim());
+        return users.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     public UserDto toDto(User user) {

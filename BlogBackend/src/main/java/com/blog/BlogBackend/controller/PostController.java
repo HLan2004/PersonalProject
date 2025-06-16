@@ -2,14 +2,11 @@ package com.blog.BlogBackend.controller;
 
 
 import com.blog.BlogBackend.dto.PostDto;
-import com.blog.BlogBackend.entity.Post;
 import com.blog.BlogBackend.entity.User;
 import com.blog.BlogBackend.exception.ResourceNotFoundException;
-import com.blog.BlogBackend.repository.PostRepo;
 import com.blog.BlogBackend.service.PostService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,8 +23,6 @@ public class PostController {
     @Autowired
     private PostService postService;
 
-    @Autowired
-    private PostRepo postRepo;
 
     @PostMapping(
             value = "/user/{userId}/meal/{mealCateId}/difficulty/{difficultyCateId}",
@@ -43,7 +38,6 @@ public class PostController {
             PostDto savedPost = postService.createPost(postDto, userId, mealCateId, difficultyCateId);
             return new ResponseEntity<>(savedPost, HttpStatus.CREATED);
         } catch (EntityNotFoundException e) {
-            // userId, mealCateId or difficultyCateId not found
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body("Resource not found: " + e.getMessage());
@@ -142,60 +136,32 @@ public class PostController {
         }
     }
 
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePost(@PathVariable("id") Long id) {
+    @DeleteMapping("/bulk")
+    public ResponseEntity<?> deleteMultiplePosts(@RequestBody List<Long> postIds) {
         try {
-            postService.delete(id);
-            return ResponseEntity.ok("Post deleted successfully");
+            if (postIds == null || postIds.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Post IDs list cannot be null or empty");
+            }
+
+            postService.deleteMultiplePosts(postIds);
+            return ResponseEntity.ok("Posts deleted successfully. Total deleted: " + postIds.size());
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Bad request: " + e.getMessage());
 
         } catch (EntityNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
-                    .body("Post not found with id " + id);
+                    .body(e.getMessage());
 
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred");
-        }
-    }
-
-
-    @GetMapping("/mealCategory/{mealCategoryId}")
-    public ResponseEntity<?> getPostByMealCate(@PathVariable("mealCategoryId") Long mealCategoryId) {
-        try {
-            List<PostDto> list = postService.getPostByMealCate(mealCategoryId);
-            return ResponseEntity.ok(list);
-
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body("Meal category not found with id " + mealCategoryId);
-
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred");
-        }
-    }
-
-
-    @GetMapping("/difficultyCategory/{difficultyCategoryId}")
-    public ResponseEntity<?> getPostByDifficultyCate(@PathVariable("difficultyCategoryId") Long difficultyCategoryId) {
-        try {
-            List<PostDto> list = postService.getPostByDifficultyCate(difficultyCategoryId);
-            return ResponseEntity.ok(list);
-
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body("Difficulty category not found with id " + difficultyCategoryId);
-
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred");
+                    .body("An unexpected error occurred while deleting posts");
         }
     }
 
@@ -203,7 +169,6 @@ public class PostController {
     @PutMapping("/{postId}/toggle-like")
     public ResponseEntity<?> toggleLike(@PathVariable Long postId) {
         try {
-            // Get current authenticated user
             User currentUser = (User) SecurityContextHolder.getContext()
                     .getAuthentication()
                     .getPrincipal();
@@ -213,7 +178,7 @@ public class PostController {
                         .body("User not authenticated");
             }
 
-            postService.toggleLike(postId, currentUser.getId()); // Use getId() instead of getUserId()
+            postService.toggleLike(postId, currentUser.getId());
             PostDto updatedPost = postService.getByIdPost(postId);
             return ResponseEntity.ok(updatedPost);
         } catch (ResourceNotFoundException e) {

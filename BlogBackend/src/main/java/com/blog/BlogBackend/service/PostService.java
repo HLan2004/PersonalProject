@@ -16,11 +16,7 @@ public interface PostService {
 
    List<PostDto> getAllPost();
 
-   void delete(Long id);
-
-   List<PostDto> getPostByMealCate(Long id);
-
-   List<PostDto> getPostByDifficultyCate(Long id);
+   void deleteMultiplePosts(List<Long> postIds);
 
    List<PostDto> getPostByUser(Long id);
 
@@ -31,4 +27,7 @@ public interface PostService {
    List<PostDto> getFilteredPosts(Long mealCategoryId, Long difficultyCategoryId);
 
    List<PostDto> searchPosts(String title, Long mealCategoryId, Long difficultyCategoryId);
+
+   List<PostDto> getUserPostsByMealCategory(Long userId, Long mealCategoryId);
+
 }

@@ -49,8 +49,6 @@ public class PostServiceImpl implements PostService {
     private AuthenticationService authenticationService;
 
 
-
-
     @Override
     public PostDto createPost(PostDto dto, Long userId, Long mealCateId, Long difficultyCateId) {
         User user = userRepo.findById(userId)
@@ -169,24 +167,30 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void delete(Long id) {
-        Post post = postRepo.findById(id).orElseThrow(()-> new ResourceNotFoundException("Post", "id", id));
-        postRepo.delete(post);
-    }
+    public void deleteMultiplePosts(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            throw new IllegalArgumentException("Post IDs list cannot be null or empty");
+        }
 
-    @Override
-    public List<PostDto> getPostByMealCate(Long id) {
+        // Validate that all posts exist before deleting any
+        List<Post> postsToDelete = new ArrayList<>();
+        List<Long> notFoundIds = new ArrayList<>();
 
-        MealCate mealCate = mealCateRepo.findById(id).orElseThrow(()-> new ResourceNotFoundException("MealCate", "id", id));
-        List<Post> posts = postRepo.findByMealCate(mealCate);
-        return posts.stream().map(this::PostToDto).toList();
-    }
+        for (Long postId : postIds) {
+            Optional<Post> postOpt = postRepo.findById(postId);
+            if (postOpt.isPresent()) {
+                postsToDelete.add(postOpt.get());
+            } else {
+                notFoundIds.add(postId);
+            }
+        }
 
-    @Override
-    public List<PostDto> getPostByDifficultyCate(Long id) {
-        DifficultyCate difficultyCate = difficultyCateRepo.findById(id).orElseThrow(()-> new ResourceNotFoundException("DifficultyCate", "id", id));
-        List<Post> posts = postRepo.findByDifficultyCate(difficultyCate);
-        return posts.stream().map(this::PostToDto).toList();
+        if (!notFoundIds.isEmpty()) {
+            throw new EntityNotFoundException("Posts not found with IDs: " + notFoundIds);
+        }
+
+        // Delete all posts if all exist
+        postRepo.deleteAll(postsToDelete);
     }
 
     @Override
@@ -241,7 +245,7 @@ public class PostServiceImpl implements PostService {
 
         List<Post> posts = postRepo.findByMealCateAndDifficultyCate(mealCate, difficultyCate);
         return posts.stream()
-                .map(this::PostToDto)  // Use your existing method name
+                .map(this::PostToDto)
                 .collect(Collectors.toList());
     }
 
@@ -266,6 +270,22 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    public List<PostDto> getUserPostsByMealCategory(Long userId, Long mealCategoryId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        MealCate mealCate = mealCateRepo.findById(mealCategoryId)
+                .orElseThrow(() -> new RuntimeException("Meal category not found with id: " + mealCategoryId));
+
+        List<Post> posts = postRepo.findByUserAndMealCate(user, mealCate);
+
+        return posts.stream()
+                .map(this::PostToDto)
+                .collect(Collectors.toList());
+    }
+
     public Post DtoToPost(PostDto pd) {return model.map(pd, Post.class);}
 
 
@@ -283,9 +303,6 @@ public class PostServiceImpl implements PostService {
 
         if (dto.getInstructions() != null) {
             for (InstructionDto instructionDto : dto.getInstructions()) {
-                // Find the corresponding Instruction entity to get the step image data
-                // This assumes you have a way to match InstructionDto with Instruction entity
-                // You might need to adjust this based on your entity mapping
                 if (post.getInstructions() != null) {
                     post.getInstructions().stream()
                             .filter(instruction -> instruction.getStepOrder().equals(instructionDto.getStepOrder()))
@@ -301,7 +318,6 @@ public class PostServiceImpl implements PostService {
                 }
             }
         }
-
 
         if (post.getUser() != null) {
             dto.setAuthorName(post.getUser().getBlogUsername());
@@ -319,7 +335,6 @@ public class PostServiceImpl implements PostService {
         dto.setCountLike(liked.size());
         dto.setLikedByCurrentUser(liked.contains(authenticationService.getCurrentUserId()));
         dto.setLikedUserIds(liked);
-
 
         return dto;
     }
