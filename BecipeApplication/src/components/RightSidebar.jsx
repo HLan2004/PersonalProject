@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import {CloseIcon, MenuIcon, SearchIcon, CreatePostIcon, LogInIcon, LogOutIcon,} from "./Icon.jsx";
@@ -5,6 +6,7 @@ import {fetchCurrentUser, fetchMyPostsByMealCategory, searchUsers} from "../serv
 import {useNavigate} from "react-router-dom";
 import {logout} from "../service/auth.js";
 import {fetchMealCategories} from "../service/cate.js";
+import {searchPosts} from "../service/posts.js";
 
 const AppSidebarWrapper = styled.div`
     position: absolute;
@@ -43,9 +45,9 @@ const SidebarContainer = styled.aside`
     align-items: center;
     padding: 0;
     box-shadow: ${(props) =>
-            props.isOpen
-                    ? "-2px 0 10px rgba(0, 0, 0, 0.1)"
-                    : "-2px 0 10px rgba(0, 0, 0, 0.05)"};
+    props.isOpen
+        ? "-2px 0 10px rgba(0, 0, 0, 0.1)"
+        : "-2px 0 10px rgba(0, 0, 0, 0.05)"};
     height: 100vh;
     z-index: 11;
     border-right: 1.5px solid #e8e8e8;
@@ -462,7 +464,7 @@ const SearchModal = styled.div`
     border-radius: 20px;
     padding: 0;
     width: 90%;
-    max-width: 600px;
+    max-width: 700px;
     max-height: 85vh;
     overflow: hidden;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
@@ -512,6 +514,32 @@ const SearchTitle = styled.h2`
     font-weight: 700;
     margin: 0;
     color: white;
+`;
+
+// New tab switcher styles
+const SearchTabsContainer = styled.div`
+    display: flex;
+    gap: 8px;
+    padding: 4px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+`;
+
+const SearchTab = styled.button`
+    background: ${props => props.active ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    border: 1px solid ${props => props.active ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    
+    &:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
 `;
 
 const SearchCloseButton = styled.button`
@@ -679,6 +707,47 @@ const SearchUserAvatar = styled.img`
     }
 `;
 
+// Post-specific styled components
+const SearchPostImageContainer = styled.div`
+    position: relative;
+    margin-right: 16px;
+`;
+
+const SearchPostImage = styled.img`
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 3px solid #e5e7eb;
+    transition: all 0.2s ease;
+    
+    ${SearchResultItem}:hover & {
+        border-color: #ff8c42;
+        transform: scale(1.05);
+    }
+`;
+
+const PostDifficultyBadge = styled.div`
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    background: ${props => {
+    switch(props.difficulty) {
+        case 'easy': return '#10b981';
+        case 'medium': return '#f59e0b';
+        case 'hard': return '#ef4444';
+        case 'professional': return '#8b5cf6';
+        case 'ultimate': return '#dc2626';
+        default: return '#6b7280';
+    }
+}};
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
 const OnlineIndicator = styled.div`
     position: absolute;
     bottom: 2px;
@@ -714,8 +783,49 @@ const SearchUserEmail = styled.div`
     white-space: nowrap;
 `;
 
+// Post-specific info components
+const SearchPostInfo = styled.div`
+    flex: 1;
+    min-width: 0;
+`;
+
+const SearchPostTitle = styled.div`
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const SearchPostMeta = styled.div`
+    font-size: 14px;
+    color: #6b7280;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+`;
+
 const ViewProfileButton = styled.div`
     background: linear-gradient(135deg, #ff8c42 0%, #e67e22 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.2s ease;
+    
+    ${SearchResultItem}:hover & {
+        opacity: 1;
+        transform: translateX(0);
+    }
+`;
+
+const ViewPostButton = styled.div`
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     padding: 8px 16px;
     border-radius: 12px;
@@ -801,8 +911,9 @@ const RightSidebar = ({ onToggle, onLogout }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [activeSearchTab, setActiveSearchTab] = useState('users'); // 'users' or 'posts'
 
-    const handleSearch = async (query) => {
+    const handleSearch = async (query, searchType = activeSearchTab) => {
         if (!query.trim()) {
             setSearchResults([]);
             return;
@@ -810,8 +921,14 @@ const RightSidebar = ({ onToggle, onLogout }) => {
 
         setIsSearching(true);
         try {
-            const response = await searchUsers(query);
-            setSearchResults(response.data || []);
+            let response;
+            if (searchType === 'users') {
+                response = await searchUsers(query);
+                setSearchResults(response.data || []);
+            } else {
+                response = await searchPosts(query, null, null);
+                setSearchResults(response.data || []);
+            }
         } catch (error) {
             console.error('Search failed:', error);
             setSearchResults([]);
@@ -824,12 +941,19 @@ const RightSidebar = ({ onToggle, onLogout }) => {
         const query = e.target.value;
         setSearchQuery(query);
 
-        // Debounce search - wait 300ms after user stops typing
         const timeoutId = setTimeout(() => {
-            handleSearch(query);
+            handleSearch(query, activeSearchTab);
         }, 300);
 
         return () => clearTimeout(timeoutId);
+    };
+
+    const handleTabChange = (tab) => {
+        setActiveSearchTab(tab);
+        setSearchResults([]);
+        if (searchQuery.trim()) {
+            handleSearch(searchQuery, tab);
+        }
     };
 
     const handleUserClick = (userId) => {
@@ -837,6 +961,13 @@ const RightSidebar = ({ onToggle, onLogout }) => {
         setSearchQuery('');
         setSearchResults([]);
         navigate(`/app/user/${userId}`);
+    };
+
+    const handlePostClick = (postId) => {
+        setShowSearchModal(false);
+        setSearchQuery('');
+        setSearchResults([]);
+        navigate(`/app/post/${postId}`);
     };
 
     const handleSearchClick = () => {
@@ -847,8 +978,13 @@ const RightSidebar = ({ onToggle, onLogout }) => {
         setShowSearchModal(false);
         setSearchQuery('');
         setSearchResults([]);
+        setActiveSearchTab('users');
     };
 
+    const clearSearch = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+    };
 
     useEffect(() => {
         fetchMealCategories()
@@ -1025,8 +1161,22 @@ const RightSidebar = ({ onToggle, onLogout }) => {
                         <SearchHeader>
                             <SearchTitleContainer>
                                 <SearchIcon />
-                                <SearchTitle>Discover Users</SearchTitle>
+                                <SearchTitle>Search</SearchTitle>
                             </SearchTitleContainer>
+                            <SearchTabsContainer>
+                                <SearchTab
+                                    active={activeSearchTab === 'users'}
+                                    onClick={() => handleTabChange('users')}
+                                >
+                                    Users
+                                </SearchTab>
+                                <SearchTab
+                                    active={activeSearchTab === 'posts'}
+                                    onClick={() => handleTabChange('posts')}
+                                >
+                                    Posts
+                                </SearchTab>
+                            </SearchTabsContainer>
                             <SearchCloseButton onClick={handleCloseSearch}>
                                 <CloseIcon />
                             </SearchCloseButton>
@@ -1039,13 +1189,17 @@ const RightSidebar = ({ onToggle, onLogout }) => {
                                 </SearchInputIcon>
                                 <SearchInput
                                     type="text"
-                                    placeholder="Search for amazing users..."
+                                    placeholder={
+                                        activeSearchTab === 'users'
+                                            ? "Search for amazing users..."
+                                            : "Search for delicious recipes..."
+                                    }
                                     value={searchQuery}
                                     onChange={handleSearchInputChange}
                                     autoFocus
                                 />
                                 {searchQuery && (
-                                    <ClearButton onClick={() => setSearchQuery('')}>
+                                    <ClearButton onClick={clearSearch}>
                                         <CloseIcon />
                                     </ClearButton>
                                 )}
@@ -1056,56 +1210,103 @@ const RightSidebar = ({ onToggle, onLogout }) => {
                             {isSearching ? (
                                 <LoadingContainer>
                                     <LoadingSpinner />
-                                    <LoadingText>Searching for users...</LoadingText>
+                                    <LoadingText>
+                                        Searching for {activeSearchTab}...
+                                    </LoadingText>
                                 </LoadingContainer>
                             ) : searchResults.length > 0 ? (
                                 <>
                                     <ResultsHeader>
-                                        <ResultsCount>{searchResults.length} users found</ResultsCount>
+                                        <ResultsCount>
+                                            {searchResults.length} {activeSearchTab} found
+                                        </ResultsCount>
                                     </ResultsHeader>
                                     <ResultsList>
-                                        {searchResults.map(user => (
-                                            <SearchResultItem
-                                                key={user.id}
-                                                onClick={() => handleUserClick(user.id)}
-                                            >
-                                                <SearchUserAvatarContainer>
-                                                    <SearchUserAvatar
-                                                        src={
-                                                            user.imageData
-                                                                ? `data:${user.imageType};base64,${user.imageData}`
-                                                                : "/api/placeholder/48/48"
-                                                        }
-                                                        alt={user.username}
-                                                    />
-                                                    <OnlineIndicator />
-                                                </SearchUserAvatarContainer>
-                                                <SearchUserInfo>
-                                                    <SearchUserName>{user.username}</SearchUserName>
-                                                    <SearchUserEmail>{user.email}</SearchUserEmail>
-                                                </SearchUserInfo>
-                                                <ViewProfileButton>
-                                                    View Profile
-                                                </ViewProfileButton>
-                                            </SearchResultItem>
-                                        ))}
+                                        {activeSearchTab === 'users' ? (
+                                            searchResults.map(user => (
+                                                <SearchResultItem
+                                                    key={user.id}
+                                                    onClick={() => handleUserClick(user.id)}
+                                                >
+                                                    <SearchUserAvatarContainer>
+                                                        <SearchUserAvatar
+                                                            src={
+                                                                user.imageData
+                                                                    ? `data:${user.imageType};base64,${user.imageData}`
+                                                                    : "/api/placeholder/48/48"
+                                                            }
+                                                            alt={user.username}
+                                                        />
+                                                        <OnlineIndicator />
+                                                    </SearchUserAvatarContainer>
+                                                    <SearchUserInfo>
+                                                        <SearchUserName>{user.username}</SearchUserName>
+                                                        <SearchUserEmail>{user.email}</SearchUserEmail>
+                                                    </SearchUserInfo>
+                                                    <ViewProfileButton>
+                                                        View Profile
+                                                    </ViewProfileButton>
+                                                </SearchResultItem>
+                                            ))
+                                        ) : (
+                                            searchResults.map(post => (
+                                                <SearchResultItem
+                                                    key={post.postId}
+                                                    onClick={() => handlePostClick(post.postId)}
+                                                >
+                                                    <SearchPostImageContainer>
+                                                        <SearchPostImage
+                                                            src={
+                                                                post.imageData
+                                                                    ? `data:${post.imageType};base64,${post.imageData}`
+                                                                    : "/api/placeholder/48/48"
+                                                            }
+                                                            alt={post.title}
+                                                        />
+                                                        <PostDifficultyBadge
+                                                            difficulty={post.difficultyCate?.difficultyTitle?.toLowerCase() || 'easy'}
+                                                        />
+                                                    </SearchPostImageContainer>
+                                                    <SearchPostInfo>
+                                                        <SearchPostTitle>{post.title}</SearchPostTitle>
+                                                        <SearchPostMeta>
+                                                            <span>{post.mealCate?.mealCateTitle || 'General'}</span>
+                                                            <span>•</span>
+                                                            <span>{post.difficultyCate?.difficultyTitle || 'Easy'}</span>
+                                                        </SearchPostMeta>
+                                                    </SearchPostInfo>
+                                                    <ViewPostButton>
+                                                        View Recipe
+                                                    </ViewPostButton>
+                                                </SearchResultItem>
+                                            ))
+                                        )}
                                     </ResultsList>
                                 </>
                             ) : searchQuery.trim() ? (
                                 <EmptyState>
-                                    <EmptyStateIcon>🔍</EmptyStateIcon>
-                                    <EmptyStateTitle>No users found</EmptyStateTitle>
+                                    <EmptyStateIcon>
+                                        {activeSearchTab === 'users' ? '🔍' : '🍽️'}
+                                    </EmptyStateIcon>
+                                    <EmptyStateTitle>
+                                        No {activeSearchTab} found
+                                    </EmptyStateTitle>
                                     <EmptyStateText>
-                                        We couldn't find any users matching "{searchQuery}".
+                                        We couldn't find any {activeSearchTab} matching "{searchQuery}".
                                         Try searching with a different keyword.
                                     </EmptyStateText>
                                 </EmptyState>
                             ) : (
                                 <EmptyState>
-                                    <EmptyStateIcon>👋</EmptyStateIcon>
+                                    <EmptyStateIcon>
+                                        {activeSearchTab === 'users' ? '👋' : '📝'}
+                                    </EmptyStateIcon>
                                     <EmptyStateTitle>Start your search</EmptyStateTitle>
                                     <EmptyStateText>
-                                        Type a username to find and connect with other users
+                                        {activeSearchTab === 'users'
+                                            ? "Type a username to find and connect with other users"
+                                            : "Type a recipe name to find delicious recipes"
+                                        }
                                     </EmptyStateText>
                                 </EmptyState>
                             )}

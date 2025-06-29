@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { User, MapPin, Calendar, Edit3, Users, UserPlus, UserMinus, Camera } from 'lucide-react';
+import { Calendar, Edit3, UserPlus, UserMinus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
     fetchCurrentUser,
@@ -49,15 +49,15 @@ const MainContent = styled.main`
 const PageContainer = styled.div`
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 0;
-    min-height: 100vh;
+    padding: 0;
+    max-height: 100vh;
 `;
 
 const ProfileHeader = styled.div`
     background: white;
     border-radius: 24px;
     padding: 3rem;
-    margin: 55px 0 2rem;
+    margin: 30px 0;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.04);
     position: relative;
@@ -94,6 +94,7 @@ const AvatarContainer = styled.div`
     flex-shrink: 0;
 `;
 
+
 const Avatar = styled.div`
     width: 140px;
     height: 140px;
@@ -112,31 +113,7 @@ const Avatar = styled.div`
     color: white;
     font-size: 3rem;
     font-weight: bold;
-    cursor: ${props => props.isOwnProfile ? 'pointer' : 'default'};
-    transition: all 0.3s ease;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-
-    &:hover {
-        transform: ${props => props.isOwnProfile ? 'scale(1.05)' : 'none'};
-        box-shadow: ${props => props.isOwnProfile ? '0 20px 40px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.15)' : '0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1)'};
-    }
-`;
-
-const AvatarUploadOverlay = styled.div`
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    cursor: pointer;
-
-    ${Avatar}:hover & {
-        opacity: 1;
-    }
 `;
 
 const ProfileIdentity = styled.div`
@@ -574,13 +551,9 @@ const UserPage = () => {
                                 isOwnProfile={isOwnProfile}
                             >
                                 {!getUserImageUrl(profileUser) && (profileUser.username?.charAt(0) || 'U')}
-                                {isOwnProfile && (
-                                    <AvatarUploadOverlay>
-                                        <Camera size={24} />
-                                    </AvatarUploadOverlay>
-                                )}
                             </Avatar>
                         </AvatarContainer>
+
 
                         <ProfileInfo>
                             <ProfileIdentity>

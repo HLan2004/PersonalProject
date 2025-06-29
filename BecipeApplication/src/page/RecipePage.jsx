@@ -1,3 +1,4 @@
+
 import React from "react";
 import styled from "styled-components";
 import FilterBar from "../components/FilterBar";
@@ -11,7 +12,6 @@ const MainContent = styled.main`
     overflow-y: scroll;
     overflow-x: hidden;
     margin-right: 80px;
-    margin-top: -35px;
 
     &::-webkit-scrollbar {
         width: 10px;
@@ -36,10 +36,18 @@ const MainContent = styled.main`
     scrollbar-color: #888 transparent;
 `;
 
+const FilterBarWrapper = styled.div`
+    & > div {
+        margin-top: 20px;
+    }
+`;
+
 const RecipePage = () => {
     return (
         <MainContent>
-            <FilterBar />
+            <FilterBarWrapper>
+                <FilterBar />
+            </FilterBarWrapper>
             <RecipeCard />
         </MainContent>
     );

@@ -12,6 +12,15 @@ export const createPost = (formData, userId, mealId, diffId) => {
     })
 }
 
+export const updatePost = (id, formData) => {
+    return api.put(`/post/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}
+
+
 export const fetchTrendingPost = () =>
     api.get('/post/trending')
 
@@ -20,6 +29,9 @@ export const likePost = (postId) =>
 
 export const deleteMultiplePosts = (postIds) =>
     api.delete('/post/bulk', { data: postIds })
+
+export const fetchPostsFromFollowedUsers = () =>
+    api.get('/post/following')
 
 export const fetchFilteredPosts = async (mealCategoryId, difficultyCategoryId) => {
     const params = new URLSearchParams();

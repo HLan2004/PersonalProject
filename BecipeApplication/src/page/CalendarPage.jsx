@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Calendar as FullCalendar } from '@fullcalendar/core';
@@ -55,6 +56,7 @@ const CalendarHeader = styled.div`
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
     border: 1px solid rgba(0, 0, 0, 0.04);
+    margin-top: 10px;
 `;
 
 const HeaderTop = styled.div`
@@ -110,7 +112,6 @@ const SearchInput = styled.input`
     }
 `;
 
-
 const SearchIcon = styled.div`
     position: absolute;
     left: 20px;
@@ -145,20 +146,31 @@ const FilterLabel = styled.label`
     margin: 0 auto 0;
 `;
 
-const FilterSelect = styled.select`
+// Custom Dropdown Components (similar to FilterBar)
+const DropdownContainer = styled.div`
+    position: relative;
+    min-width: 180px;
+`;
+
+const DropdownButton = styled.button`
     appearance: none;
-    padding: 12px 44px 12px 16px;
+    background-color: #fff8f3;
     border: 2px solid #ffb366;
     border-radius: 12px;
+    padding: 12px 44px 12px 16px;
     font-size: 0.9rem;
     color: #374151;
     cursor: pointer;
-    transition: all 0.3s ease;
-    background: #fff8f3 url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ff8c42' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") no-repeat right 16px center;
+    width: 100%;
+    text-align: left;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ff8c42' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 16px center;
+    background-repeat: no-repeat;
     background-size: 16px;
     height: 54px;
     box-sizing: border-box;
-    min-width: 180px;
+    transition: all 0.3s ease;
+    font-weight: 500;
 
     &:focus {
         outline: none;
@@ -172,6 +184,143 @@ const FilterSelect = styled.select`
     }
 `;
 
+const DropdownList = styled.ul`
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    max-height: none;
+    overflow: visible;
+    z-index: 1000;
+    margin: 2px 0 0 0;
+    padding: 0;
+    list-style: none;
+    display: ${props => props.isOpen ? 'block' : 'none'};
+`;
+
+const DropdownItem = styled.li`
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #374151;
+    transition: all 0.2s ease;
+    font-weight: 500;
+
+    &:hover {
+        background-color: #ff8c42;
+        color: white;
+    }
+
+    &:first-child {
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+
+    &:last-child {
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+`;
+
+const CheckboxContainer = styled.div`
+    appearance: none;
+    padding: 12px 44px 12px 16px;
+    border: 2px solid #ffb366;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: ${props => props.checked ? '#ff8c42' : '#fff8f3'};
+    height: 54px;
+    box-sizing: border-box;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    user-select: none;
+    font-weight: 500;
+
+    &:focus {
+        outline: none;
+        border-color: #ff8c42;
+        background-color: ${props => props.checked ? '#ff8c42' : 'white'};
+        box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.1);
+    }
+
+    &:hover {
+        border-color: #ff8c42;
+    }
+
+    &::after {
+        content: ${props => props.checked ? '"✓"' : '""'};
+        margin-left: auto;
+        font-weight: bold;
+        color: ${props => props.checked ? 'white' : 'transparent'};
+    }
+`;
+
+// Custom Dropdown Component
+const CustomDropdown = ({ value, onChange, options, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    const selectedOption = options.find(option => option.value === value);
+    const displayText = selectedOption ? selectedOption.label : placeholder;
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelect = (optionValue) => {
+        onChange({ target: { value: optionValue } });
+        setIsOpen(false);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+        } else if (e.key === 'Escape') {
+            setIsOpen(false);
+        }
+    };
+
+    return (
+        <DropdownContainer ref={dropdownRef}>
+            <DropdownButton
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                onKeyDown={handleKeyDown}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+            >
+                {displayText}
+            </DropdownButton>
+            <DropdownList isOpen={isOpen} role="listbox">
+                {options.map((option) => (
+                    <DropdownItem
+                        key={option.value}
+                        onClick={() => handleSelect(option.value)}
+                        role="option"
+                    >
+                        {option.label}
+                    </DropdownItem>
+                ))}
+            </DropdownList>
+        </DropdownContainer>
+    );
+};
 
 const ActiveFiltersSection = styled.div`
     display: flex;
@@ -193,7 +342,6 @@ const ActiveFilterTag = styled.div`
     font-weight: 500;
     box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 `;
-
 
 const RemoveTagButton = styled.button`
     background: none;
@@ -285,7 +433,7 @@ const LibraryHeader = styled.h3`
 const RecipeListContainer = styled.div`
     flex: 1;
     overflow-y: auto;
-    
+
     &::-webkit-scrollbar {
         width: 6px;
     }
@@ -357,8 +505,8 @@ const RecipeImageArea = styled.div`
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    overflow: hidden; 
-    position: relative; 
+    overflow: hidden;
+    position: relative;
 
     ${props => !props.imageUrl && `
         &::after {
@@ -368,7 +516,7 @@ const RecipeImageArea = styled.div`
             color: rgba(0, 0, 0, 0.4);
         }
     `}
-    
+
     &:hover {
         transform: scale(1.02);
         transition: transform 0.2s ease;
@@ -379,13 +527,11 @@ const RecipeContent = styled.div`
     flex: 1;
 `;
 
-
 const RecipeTitle = styled.div`
     font-weight: 600;
     color: #1f2937;
     font-size: 1rem;
 `;
-
 
 const RecipeDetails = styled.div`
     font-size: 0.8rem;
@@ -431,7 +577,6 @@ const CalendarContainer = styled.div`
     flex-direction: column;
     overflow: hidden; /* Prevent overflow */
 `;
-
 
 const CalendarWrapper = styled.div`
     flex: 1;
@@ -681,7 +826,9 @@ const CalendarPage = () => {
     const [difficultyCategories, setDifficultyCategories] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [displayedRecipes, setDisplayedRecipes] = useState([]);
-    const [currentUser, setCurrentUser] = useState(null);const [userLoading, setUserLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [userLoading, setUserLoading] = useState(true);
+    const [showFollowingOnly, setShowFollowingOnly] = useState(false);
 
     useEffect(() => {
         const loadUserAndEvents = async () => {
@@ -762,9 +909,10 @@ const CalendarPage = () => {
     }, []);
 
     // Search functionality
+    // Update your search functionality useEffect to include the showFollowingOnly filter
     useEffect(() => {
         const performSearch = async () => {
-            if (!searchTerm && difficultyFilter === 'all' && mealFilter === 'all') {
+            if (!searchTerm && difficultyFilter === 'all' && mealFilter === 'all' && !showFollowingOnly) {
                 setDisplayedRecipes(allRecipes);
                 setIsSearching(false);
                 return;
@@ -772,28 +920,69 @@ const CalendarPage = () => {
 
             setIsSearching(true);
             try {
-                const mealCategoryId = mealFilter === 'all' ? null :
-                    mealCategories.find(cat => cat.mealCateTitle.toLowerCase() === mealFilter)?.id;
-                const difficultyCategoryId = difficultyFilter === 'all' ? null :
-                    difficultyCategories.find(cat => cat.difficultyTitle.toLowerCase() === difficultyFilter)?.id;
+                let response;
 
-                const response = await searchPosts(
-                    searchTerm || null,
-                    mealCategoryId,
-                    difficultyCategoryId
-                );
+                // Check if "Following Only" is enabled
+                if (showFollowingOnly) {
+                    console.log('Fetching posts from followed users only');
+                    // You'll need to import this function from your posts service
+                    const { fetchPostsFromFollowedUsers } = await import('../service/posts.js');
+                    response = await fetchPostsFromFollowedUsers();
 
-                const searchedRecipes = response.data.map(post => ({
-                    id: post.postId,
-                    title: post.title,
-                    difficulty: post.difficultyCate?.difficultyTitle?.toLowerCase() || 'easy',
-                    meal: post.mealCate?.mealCateTitle?.toLowerCase() || 'dinner',
-                    imageUrl: post.imageData
-                        ? `data:${post.imageType};base64,${post.imageData}`
-                        : null
-                }));
+                    // If there are additional filters, apply them to the followed users' posts
+                    let filteredRecipes = response.data.map(post => ({
+                        id: post.postId,
+                        title: post.title,
+                        difficulty: post.difficultyCate?.difficultyTitle?.toLowerCase() || 'easy',
+                        meal: post.mealCate?.mealCateTitle?.toLowerCase() || 'dinner',
+                        imageUrl: post.imageData
+                            ? `data:${post.imageType};base64,${post.imageData}`
+                            : null
+                    }));
 
-                setDisplayedRecipes(searchedRecipes);
+                    // Apply additional filters if needed
+                    if (searchTerm) {
+                        filteredRecipes = filteredRecipes.filter(recipe =>
+                            recipe.title.toLowerCase().includes(searchTerm.toLowerCase())
+                        );
+                    }
+                    if (difficultyFilter !== 'all') {
+                        filteredRecipes = filteredRecipes.filter(recipe =>
+                            recipe.difficulty === difficultyFilter
+                        );
+                    }
+                    if (mealFilter !== 'all') {
+                        filteredRecipes = filteredRecipes.filter(recipe =>
+                            recipe.meal === mealFilter
+                        );
+                    }
+
+                    setDisplayedRecipes(filteredRecipes);
+                } else {
+                    // Use existing logic for other filters
+                    const mealCategoryId = mealFilter === 'all' ? null :
+                        mealCategories.find(cat => cat.mealCateTitle.toLowerCase() === mealFilter)?.id;
+                    const difficultyCategoryId = difficultyFilter === 'all' ? null :
+                        difficultyCategories.find(cat => cat.difficultyTitle.toLowerCase() === difficultyFilter)?.id;
+
+                    response = await searchPosts(
+                        searchTerm || null,
+                        mealCategoryId,
+                        difficultyCategoryId
+                    );
+
+                    const searchedRecipes = response.data.map(post => ({
+                        id: post.postId,
+                        title: post.title,
+                        difficulty: post.difficultyCate?.difficultyTitle?.toLowerCase() || 'easy',
+                        meal: post.mealCate?.mealCateTitle?.toLowerCase() || 'dinner',
+                        imageUrl: post.imageData
+                            ? `data:${post.imageType};base64,${post.imageData}`
+                            : null
+                    }));
+
+                    setDisplayedRecipes(searchedRecipes);
+                }
             } catch (error) {
                 console.error('Error searching recipes:', error);
                 setDisplayedRecipes([]);
@@ -804,7 +993,18 @@ const CalendarPage = () => {
 
         const timeoutId = setTimeout(performSearch, 300);
         return () => clearTimeout(timeoutId);
-    }, [searchTerm, difficultyFilter, mealFilter, allRecipes, mealCategories, difficultyCategories]);
+    }, [searchTerm, difficultyFilter, mealFilter, showFollowingOnly, allRecipes, mealCategories, difficultyCategories]);
+
+    const handleFollowingToggle = () => {
+        setShowFollowingOnly(!showFollowingOnly);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleFollowingToggle();
+        }
+    };
 
     // Initialize drag and drop
     useEffect(() => {
@@ -863,103 +1063,119 @@ const CalendarPage = () => {
 
                 eventReceive: async function(info) {
                     if (!currentUser || !currentUser.id) {
-                        alert('Please login to save events');
+                        console.error('User not authenticated');
                         info.revert();
                         return;
                     }
 
                     try {
                         const eventData = {
-                            userId: currentUser.id,
                             title: info.event.title,
                             startDateTime: info.event.start.toISOString(),
-                            endDateTime: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString(),
-                            difficultyLevel: info.event.extendedProps.difficulty,
-                            mealType: info.event.extendedProps.meal,
+                            endDateTime: info.event.end ? info.event.end.toISOString() :
+                                new Date(info.event.start.getTime() + 60 * 60 * 1000).toISOString(),
+                            difficultyLevel: info.event.extendedProps.difficulty || 'easy',
+                            mealType: info.event.extendedProps.meal || 'dinner',
                             postId: info.event.extendedProps.postId,
-                            backgroundColor: info.event.backgroundColor,
-                            borderColor: info.event.borderColor,
-                            textColor: info.event.textColor
+                            userId: currentUser.id
                         };
 
                         const response = await createCalendarEvent(eventData);
 
-                        const newEvent = {
-                            id: response.data.id,
+                        if (response && response.data) {
+                            info.event.setExtendedProp('eventId', response.data.id);
+                            console.log('Event created successfully');
+                        } else {
+                            console.error('Failed to create event');
+                            info.revert();
+                        }
+                    } catch (error) {
+                        console.error('Error creating calendar event:', error);
+                        info.revert();
+                    }
+                },
+
+                eventDrop: async function(info) {
+                    if (!currentUser || !currentUser.id) {
+                        console.error('User not authenticated');
+                        info.revert();
+                        return;
+                    }
+
+                    try {
+                        const eventId = info.event.extendedProps.eventId;
+                        if (!eventId) {
+                            console.error('Event ID not found');
+                            info.revert();
+                            return;
+                        }
+
+                        const updatedData = {
+                            id: eventId,
                             title: info.event.title,
-                            start: info.event.start,
-                            end: info.event.end,
-                            backgroundColor: info.event.backgroundColor,
-                            borderColor: info.event.borderColor,
-                            textColor: info.event.textColor,
-                            extendedProps: {
-                                ...info.event.extendedProps,
-                                eventId: response.data.id
-                            },
-                            classNames: info.event.classNames
+                            startDateTime: info.event.start.toISOString(),
+                            endDateTime: info.event.end ? info.event.end.toISOString() :
+                                new Date(info.event.start.getTime() + 60 * 60 * 1000).toISOString(),
+                            difficultyLevel: info.event.extendedProps.difficulty || 'easy',
+                            mealType: info.event.extendedProps.meal || 'dinner',
+                            postId: info.event.extendedProps.postId,
+                            userId: currentUser.id
                         };
 
-                        setCalendarEvents(prevEvents => [...prevEvents, newEvent]);
+                        await updateCalendarEvent(eventId, updatedData);
+                        console.log('Event updated successfully');
                     } catch (error) {
-                        console.error('Failed to save event:', error);
-                        alert('Failed to save event. Please try again.');
+                        console.error('Error updating calendar event:', error);
+                        info.revert();
+                    }
+                },
+
+                eventResize: async function(info) {
+                    if (!currentUser || !currentUser.id) {
+                        console.error('User not authenticated');
+                        info.revert();
+                        return;
+                    }
+
+                    try {
+                        const eventId = info.event.extendedProps.eventId;
+                        if (!eventId) {
+                            console.error('Event ID not found');
+                            info.revert();
+                            return;
+                        }
+
+                        const updatedData = {
+                            id: eventId,
+                            title: info.event.title,
+                            startDateTime: info.event.start.toISOString(),
+                            endDateTime: info.event.end ? info.event.end.toISOString() :
+                                new Date(info.event.start.getTime() + 60 * 60 * 1000).toISOString(),
+                            difficultyLevel: info.event.extendedProps.difficulty || 'easy',
+                            mealType: info.event.extendedProps.meal || 'dinner',
+                            postId: info.event.extendedProps.postId,
+                            userId: currentUser.id
+                        };
+
+                        await updateCalendarEvent(eventId, updatedData);
+                        console.log('Event resized successfully');
+                    } catch (error) {
+                        console.error('Error updating calendar event:', error);
                         info.revert();
                     }
                 },
 
                 eventClick: async function(info) {
-                    const recipe = info.event;
-                    const difficulty = recipe.extendedProps.difficulty;
-                    const meal = recipe.extendedProps.meal;
-                    const eventId = recipe.extendedProps.eventId;
-
-                    if (confirm(`Recipe: ${recipe.title}\nDifficulty: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}\nMeal: ${meal.charAt(0).toUpperCase() + meal.slice(1)}\n\nWould you like to delete this recipe?`)) {
+                    if (confirm('Are you sure you want to delete this event?')) {
                         try {
+                            const eventId = info.event.extendedProps.eventId;
                             if (eventId) {
                                 await deleteCalendarEvent(eventId);
+                                info.event.remove();
+                                console.log('Event deleted successfully');
                             }
-                            info.event.remove();
-                            setCalendarEvents(prevEvents =>
-                                prevEvents.filter(event => event.id !== parseInt(recipe.id))
-                            );
                         } catch (error) {
-                            console.error('Failed to delete event:', error);
-                            alert('Failed to delete event. Please try again.');
-                        }
-                    }
-                },
-
-                eventDrop: async function(info) {
-                    const eventId = info.event.extendedProps.eventId;
-
-                    if (eventId) {
-                        try {
-                            const eventData = {
-                                userId: currentUser.id,
-                                title: info.event.title,
-                                startDateTime: info.event.start.toISOString(),
-                                endDateTime: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString(),
-                                difficultyLevel: info.event.extendedProps.difficulty,
-                                mealType: info.event.extendedProps.meal,
-                                postId: info.event.extendedProps.postId,
-                                backgroundColor: info.event.backgroundColor,
-                                borderColor: info.event.borderColor,
-                                textColor: info.event.textColor
-                            };
-
-                            await updateCalendarEvent(eventId, eventData);
-
-                            setCalendarEvents(prevEvents =>
-                                prevEvents.map(event =>
-                                    event.id === parseInt(info.event.id)
-                                        ? { ...event, start: info.event.start, end: info.event.end }
-                                        : event
-                                )
-                            );
-                        } catch (error) {
-                            console.error('Failed to update event:', error);
-                            alert('Failed to update event. Please try again.');
-                            info.revert();
+                            console.error('Error deleting calendar event:', error);
                         }
                     }
                 }
@@ -967,64 +1183,39 @@ const CalendarPage = () => {
 
             calendarInstance.current.render();
         }
+
+        if (calendarInstance.current && calendarEvents.length > 0) {
+            calendarInstance.current.removeAllEvents();
+            calendarInstance.current.addEventSource(calendarEvents);
+        }
+
         return () => {
             if (calendarInstance.current) {
                 calendarInstance.current.destroy();
                 calendarInstance.current = null;
             }
         };
-    }, [currentUser, userLoading]);
-
-    // Sync calendar events with state
-    useEffect(() => {
-        if (calendarInstance.current) {
-            const currentEvents = calendarInstance.current.getEvents();
-
-            currentEvents.forEach(event => {
-                const stillExists = calendarEvents.some(stateEvent =>
-                    stateEvent.id === parseInt(event.id)
-                );
-                if (!stillExists) {
-                    event.remove();
-                }
-            });
-
-            calendarEvents.forEach(stateEvent => {
-                const alreadyExists = currentEvents.some(calEvent =>
-                    parseInt(calEvent.id) === stateEvent.id
-                );
-                if (!alreadyExists) {
-                    calendarInstance.current.addEvent(stateEvent);
-                }
-            });
-        }
-    }, [calendarEvents]);
-
-    useEffect(() => {
-        if (!searchTerm && difficultyFilter === 'all' && mealFilter === 'all') {
-            setDisplayedRecipes(allRecipes);
-        }
-    }, [allRecipes]);
+    }, [currentUser, userLoading, calendarEvents]);
 
     const getDifficultyColor = (difficulty) => {
-        switch (difficulty) {
-            case 'easy': return '#cbe740';
-            case 'medium': return '#ffc107';
-            case 'hard': return '#f39c12';
-            case 'professional': return '#e67e22';
-            case 'ultimate': return '#c0392b';
-            default: return '#cbe740';
+        switch(difficulty) {
+            case 'easy': return '#10b981';
+            case 'medium': return '#f59e0b';
+            case 'hard': return '#ef4444';
+            case 'professional': return '#8b5cf6';
+            case 'ultimate': return '#dc2626';
+            default: return '#6b7280';
         }
     };
 
     const getDifficultyBorderColor = (difficulty) => {
-        switch (difficulty) {
-            case 'easy': return '#cbe740';
-            case 'medium': return '#ffc107';
-            case 'hard': return '#f39c12';
-            case 'professional': return '#e67e22';
-            case 'ultimate': return '#c0392b';
-            default: return '#cbe740';
+        switch(difficulty) {
+            case 'easy': return '#059669';
+            case 'medium': return '#d97706';
+            case 'hard': return '#dc2626';
+            case 'professional': return '#7c3aed';
+            case 'ultimate': return '#b91c1c';
+            default: return '#4b5563';
         }
     };
 
@@ -1032,50 +1223,61 @@ const CalendarPage = () => {
         setSearchTerm('');
         setDifficultyFilter('all');
         setMealFilter('all');
+        setShowFollowingOnly(false);
     };
 
-    const hasActiveFilters = searchTerm || difficultyFilter !== 'all' || mealFilter !== 'all';
+    const removeFilter = (filterType) => {
+        switch (filterType) {
+            case 'search':
+                setSearchTerm('');
+                break;
+            case 'difficulty':
+                setDifficultyFilter('all');
+                break;
+            case 'meal':
+                setMealFilter('all');
+                break;
+            case 'following':
+                setShowFollowingOnly(false);
+                break;
+        }
+    };
 
-    if (userLoading) {
-        return (
-            <MainContent>
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                    <h2>Loading user information...</h2>
-                    <p>Please wait while we load your profile</p>
-                </div>
-            </MainContent>
-        );
-    }
+    const getActiveFilters = () => {
+        const filters = [];
+        if (searchTerm) filters.push({ type: 'search', label: `Search: ${searchTerm}` });
+        if (difficultyFilter !== 'all') {
+            const difficultyLabel = difficultyCategories.find(d => d.difficultyTitle.toLowerCase() === difficultyFilter)?.difficultyTitle || difficultyFilter;
+            filters.push({ type: 'difficulty', label: `Difficulty: ${difficultyLabel}` });
+        }
+        if (mealFilter !== 'all') {
+            const mealLabel = mealCategories.find(m => m.mealCateTitle.toLowerCase() === mealFilter)?.mealCateTitle || mealFilter;
+            filters.push({ type: 'meal', label: `Meal: ${mealLabel}` });
+        }
+        if (showFollowingOnly) filters.push({ type: 'following', label: 'Following Only' });
+        return filters;
+    };
 
-    if (!userLoading && !currentUser) {
-        return (
-            <MainContent>
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                    <h2>Please log in to access the calendar</h2>
-                    <p>You need to be logged in to create and manage calendar events</p>
-                </div>
-            </MainContent>
-        );
-    }
+    const activeFilters = getActiveFilters();
 
     return (
         <MainContent>
             <CalendarHeader>
                 <HeaderTop>
                     <Title>
-                        <Calendar size={35} color="#ff8c42" />
-                        Recipe Calendar
+                        <Calendar size={28} color="#ff8c42"/>
+                        Meal Planning Calendar
                     </Title>
                 </HeaderTop>
 
                 <SearchAndFilterContainer>
                     <SearchSection>
                         <SearchIcon>
-                            <Search size={20} />
+                            <Search size={20}/>
                         </SearchIcon>
                         <SearchInput
                             type="text"
-                            placeholder="Search recipe library..."
+                            placeholder="Search recipes by name..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -1083,67 +1285,65 @@ const CalendarPage = () => {
 
                     <FilterSection>
                         <FilterGroup>
-                            <FilterLabel htmlFor="difficulty-filter">Difficulty Level</FilterLabel>
-                            <FilterSelect
-                                id="difficulty-filter"
-                                value={difficultyFilter}
-                                onChange={(e) => setDifficultyFilter(e.target.value)}
-                            >
-                                <option value="all">All Difficulties</option>
-                                {difficultyCategories.map(difficulty => (
-                                    <option key={difficulty.id} value={difficulty.difficultyTitle.toLowerCase()}>
-                                        {difficulty.difficultyTitle}
-                                    </option>
-                                ))}
-                            </FilterSelect>
+                            <FilterLabel>Meal Category</FilterLabel>
+                            <CustomDropdown
+                                value={mealFilter}
+                                onChange={(e) => setMealFilter(e.target.value)}
+                                options={[
+                                    { value: 'all', label: 'All Categories' },
+                                    ...mealCategories.map(cat => ({
+                                        value: cat.mealCateTitle.toLowerCase(),
+                                        label: cat.mealCateTitle
+                                    }))
+                                ]}
+                                placeholder="All Categories"
+                            />
                         </FilterGroup>
 
                         <FilterGroup>
-                            <FilterLabel htmlFor="meal-filter">Meal Type</FilterLabel>
-                            <FilterSelect
-                                id="meal-filter"
-                                value={mealFilter}
-                                onChange={(e) => setMealFilter(e.target.value)}
+                            <FilterLabel>Difficulty Level</FilterLabel>
+                            <CustomDropdown
+                                value={difficultyFilter}
+                                onChange={(e) => setDifficultyFilter(e.target.value)}
+                                options={[
+                                    { value: 'all', label: 'All Difficulties' },
+                                    ...difficultyCategories.map(cat => ({
+                                        value: cat.difficultyTitle.toLowerCase(),
+                                        label: cat.difficultyTitle
+                                    }))
+                                ]}
+                                placeholder="All Difficulties"
+                            />
+                        </FilterGroup>
+
+                        <FilterGroup>
+                            <FilterLabel>Source Filter</FilterLabel>
+                            <CheckboxContainer
+                                checked={showFollowingOnly}
+                                onClick={handleFollowingToggle}
+                                onKeyDown={handleKeyDown}
+                                tabIndex={0}
+                                role="checkbox"
+                                aria-checked={showFollowingOnly}
                             >
-                                <option value="all">All Meals</option>
-                                {mealCategories.map(meal => (
-                                    <option key={meal.id} value={meal.mealCateTitle.toLowerCase()}>
-                                        {meal.mealCateTitle}
-                                    </option>
-                                ))}
-                            </FilterSelect>
+                                Following Only
+                            </CheckboxContainer>
                         </FilterGroup>
                     </FilterSection>
                 </SearchAndFilterContainer>
 
-                {hasActiveFilters && (
+                {activeFilters.length > 0 && (
                     <ActiveFiltersSection>
-                        {searchTerm && (
-                            <ActiveFilterTag>
-                                Search: "{searchTerm}"
-                                <RemoveTagButton onClick={() => setSearchTerm('')}>
-                                    <X size={16} />
+                        {activeFilters.map((filter, index) => (
+                            <ActiveFilterTag key={index}>
+                                {filter.label}
+                                <RemoveTagButton onClick={() => removeFilter(filter.type)}>
+                                    <X size={14} />
                                 </RemoveTagButton>
                             </ActiveFilterTag>
-                        )}
-                        {difficultyFilter !== 'all' && (
-                            <ActiveFilterTag>
-                                {difficultyFilter.charAt(0).toUpperCase() + difficultyFilter.slice(1)} Difficulty
-                                <RemoveTagButton onClick={() => setDifficultyFilter('all')}>
-                                    <X size={16} />
-                                </RemoveTagButton>
-                            </ActiveFilterTag>
-                        )}
-                        {mealFilter !== 'all' && (
-                            <ActiveFilterTag>
-                                {mealFilter.charAt(0).toUpperCase() + mealFilter.slice(1)}
-                                <RemoveTagButton onClick={() => setMealFilter('all')}>
-                                    <X size={16} />
-                                </RemoveTagButton>
-                            </ActiveFilterTag>
-                        )}
+                        ))}
                         <ClearAllButton onClick={clearAllFilters}>
-                            Clear All Filters
+                            Clear All
                         </ClearAllButton>
                     </ActiveFiltersSection>
                 )}
@@ -1152,43 +1352,44 @@ const CalendarPage = () => {
             <ContentWrapper>
                 <RecipeLibrary id="recipe-library">
                     <LibraryHeader>Recipe Library</LibraryHeader>
-
                     <RecipeListContainer>
-                        {isSearching ? (
-                            <div style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
-                                Searching recipes...
+                        {recipesLoading ? (
+                            <div style={{textAlign: 'center', padding: '2rem', color: '#6b7280'}}>
+                                Loading recipes...
                             </div>
-                        ) : displayedRecipes.length > 0 ? (
-                            displayedRecipes.map(recipe => (
+                        ) : isSearching ? (
+                            <div style={{textAlign: 'center', padding: '2rem', color: '#6b7280'}}>
+                                Searching...
+                            </div>
+                        ) : displayedRecipes.length === 0 ? (
+                            <div style={{textAlign: 'center', padding: '2rem', color: '#6b7280'}}>
+                                No recipes found matching your criteria.
+                            </div>
+                        ) : (
+                            displayedRecipes.map((recipe) => (
                                 <RecipeItem
                                     key={recipe.id}
-                                    difficulty={recipe.difficulty}
                                     className="fc-event"
+                                    difficulty={recipe.difficulty}
                                     data-recipe={JSON.stringify(recipe)}
                                 >
                                     <RecipeImageArea imageUrl={recipe.imageUrl} />
                                     <RecipeContent>
                                         <RecipeTitle>{recipe.title}</RecipeTitle>
                                         <RecipeDetails>
-                                            <span>{recipe.difficulty.charAt(0).toUpperCase() + recipe.difficulty.slice(1)}</span>
-                                            <span>{recipe.meal.charAt(0).toUpperCase() + recipe.meal.slice(1)}</span>
+                                            <span>{recipe.difficulty}</span>
+                                            <span>{recipe.meal}</span>
                                         </RecipeDetails>
                                     </RecipeContent>
                                 </RecipeItem>
                             ))
-                        ) : (
-                            <div style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
-                                {searchTerm || difficultyFilter !== 'all' || mealFilter !== 'all'
-                                    ? 'No recipes match your search criteria'
-                                    : (recipesLoading ? 'Loading recipes...' : 'No recipes available')}
-                            </div>
                         )}
                     </RecipeListContainer>
                 </RecipeLibrary>
 
                 <CalendarContainer>
                     <CalendarWrapper>
-                        <div ref={calendarRef} />
+                        <div ref={calendarRef}></div>
                     </CalendarWrapper>
                 </CalendarContainer>
             </ContentWrapper>

@@ -1,12 +1,57 @@
 import React, {useEffect, useState} from "react";
 import styled from "styled-components";
-import { FaHeart, FaClock, FaPrint, FaShare, FaFacebook, FaTwitter, FaInstagram, FaArrowUp } from "react-icons/fa";
-import {useParams} from "react-router-dom";
+import {
+    FaHeart,
+    FaClock,
+    FaPrint,
+    FaShare,
+    FaFacebook,
+    FaTwitter,
+    FaInstagram,
+    FaArrowUp,
+    FaEdit
+} from "react-icons/fa";
+import {useNavigate, useParams} from "react-router-dom";
 import {fetchPostById} from "../service/posts.js";
+import {fetchCurrentUser} from "../service/users.js";
+
+
+// Add this new container above your existing PostContainer
+const MainContent = styled.main`
+    flex: 1;
+    height: 100%;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    margin-right: 80px;
+
+    &::-webkit-scrollbar {
+        width: 10px;
+        position: absolute;
+        right: -10px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
+`;
 
 const PostContainer = styled.div`
     max-width: 100vw;
-    margin: 50px 90px 0 27px;
+    margin: 50px 27px 0 32px;
     padding: 20px 20px 40px;
 `;
 
@@ -426,26 +471,6 @@ const Textarea = styled.textarea`
   margin-bottom: 20px;
 `;
 
-const InputRow = styled.div`
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-  flex-wrap: wrap;  
-`;
-
-const Input = styled.input`
-  flex: 1;
-  padding: 10px;
-  background: #eee;
-  border: none;
-    &:focus {
-        outline: none;
-    }
-
-    border-radius: 6px;
-  min-width: 120px;
-`;
-
 const CheckboxLabel = styled.label`
   display: flex;
   align-items: center;
@@ -466,22 +491,35 @@ const SubmitButton = styled.button`
 
 
 const PostPage = () => {
-
     const { id } = useParams();
+    const navigate = useNavigate();
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
-        setLoading(true);
-        fetchPostById(id)
-            .then(res => setPost(res.data))
-            .catch(err => {
-                console.error("Error fetching post", err);
-                setError("Unable to load post.");
-            })
-            .finally(() => setLoading(false));
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                // Load post
+                const postResponse = await fetchPostById(id);
+                setPost(postResponse.data);
+
+                // Load current user
+                const userResponse = await fetchCurrentUser();
+                setCurrentUser(userResponse.data);
+            } catch (err) {
+                console.error("Error fetching data", err);
+                setError("Unable to load data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, [id]);
+
 
     if (loading) {
         return <PostContainer>Loading...</PostContainer>;
@@ -498,126 +536,127 @@ const PostPage = () => {
 
 
     return (
-        <PostContainer>
-            <PostHeader>
-                <ImageWrapper>
-                    <PaperBackground />
-                    <ImageContainer>
-                        <PostImage
-                            src={`data:${post.imageType};base64,${post.imageData}`}
-                            alt={post.title}
-                        />
-                    </ImageContainer>
-                </ImageWrapper>
-                <PostInfo>
-                    <MetaWrapper>
-                        <CategoryTag>{post.mealCate.mealCateTitle}</CategoryTag>
-                        <PostMeta>
-                            <MetaItem><FaHeart /> {post.countLike} Likes</MetaItem>
-                            <MetaItem><FaClock /> {post.duration} mins</MetaItem>
-                            <MetaItem><FaPrint /> PRINT RECIPE</MetaItem>
-                            <MetaItem><FaShare /> SHARE</MetaItem>
-                        </PostMeta>
-                    </MetaWrapper>
-                    <PostTitle>{post.title}</PostTitle>
-                    <AuthorSection>
-                        <AuthorAvatar
-                            src={`data:${post.authorAvatarType};base64,${post.authorAvatar}`}
-                            alt={post.authorName}
-                        />
-                        <AuthorInfo>
-                            <AuthorName>{post.authorName}</AuthorName>
-                            <PostDate>{new Date(post.date).toLocaleDateString()}</PostDate>
-                        </AuthorInfo>
-                    </AuthorSection>
-                </PostInfo>
-            </PostHeader>
+        <MainContent>
+            <PostContainer>
+                <PostHeader>
+                    <ImageWrapper>
+                        <PaperBackground />
+                        <ImageContainer>
+                            <PostImage
+                                src={`data:${post.imageType};base64,${post.imageData}`}
+                                alt={post.title}
+                            />
+                        </ImageContainer>
+                    </ImageWrapper>
+                    <PostInfo>
+                        <MetaWrapper>
+                            <CategoryTag>{post.mealCate.mealCateTitle}</CategoryTag>
+                            <PostMeta>
+                                <MetaItem><FaHeart /> {post.countLike} Likes</MetaItem>
+                                <MetaItem><FaClock /> {post.duration} mins</MetaItem>
+                                <MetaItem><FaPrint /> PRINT RECIPE</MetaItem>
+                                <MetaItem><FaShare /> SHARE</MetaItem>
+                                {currentUser && post && currentUser.username === post.authorName && (
+                                    <MetaItem
+                                        onClick={() => navigate(`/app/update-post/${id}`)}
+                                        style={{ cursor: 'pointer', color: '#c8102e' }}
+                                    >
+                                        <FaEdit /> EDIT
+                                    </MetaItem>
+                                )}
+                            </PostMeta>
+                        </MetaWrapper>
+                        <PostTitle>{post.title}</PostTitle>
+                        <AuthorSection>
+                            <AuthorAvatar
+                                src={`data:${post.authorAvatarType};base64,${post.authorAvatar}`}
+                                alt={post.authorName}
+                            />
+                            <AuthorInfo>
+                                <AuthorName>{post.authorName}</AuthorName>
+                                <PostDate>{new Date(post.date).toLocaleDateString()}</PostDate>
+                            </AuthorInfo>
+                        </AuthorSection>
+                    </PostInfo>
+                </PostHeader>
 
-            <Wrapper>
-                <AttributesContainer>
-                    <UltimateTag difficulty={post.difficultyCate.difficultyTitle}>
-                        <span>●</span>
-                        {post.difficultyCate.difficultyTitle}
-                    </UltimateTag>
+                <Wrapper>
+                    <AttributesContainer>
+                        <UltimateTag difficulty={post.difficultyCate.difficultyTitle}>
+                            <span>●</span>
+                            {post.difficultyCate.difficultyTitle}
+                        </UltimateTag>
 
-                    <CuisineTag>
-                        <span>Cuisine:</span><strong>{post.cuisine}</strong>
-                    </CuisineTag>
-                </AttributesContainer>
+                        <CuisineTag>
+                            <span>Cuisine:</span><strong>{post.cuisine}</strong>
+                        </CuisineTag>
+                    </AttributesContainer>
 
-                <ContentContainer>
-                    <Watermark>RECIPE</Watermark>
+                    <ContentContainer>
+                        <Watermark>RECIPE</Watermark>
 
-                    <DocHeader>
-                        <SectionTitle>Main Description</SectionTitle>
-                    </DocHeader>
-                    <PostContent dangerouslySetInnerHTML={{ __html: post.description }} />
+                        <DocHeader>
+                            <SectionTitle>Main Description</SectionTitle>
+                        </DocHeader>
+                        <PostContent dangerouslySetInnerHTML={{ __html: post.description }} />
 
-                    <DocHeader>
-                        <SectionTitle>Ingredients</SectionTitle>
-                    </DocHeader>
-                    <PostContent>
-                        {post.ingredients.map((ing, i) => (
-                            <div key={i}>• {ing}</div>
-                        ))}
-                    </PostContent>
-
-                    <DocHeader>
-                        <SectionTitle>Instructions</SectionTitle>
-                    </DocHeader>
-                    <InstructionsContent>
-                        {post.instructions
-                            .slice()
-                            .sort((a, b) => a.stepOrder - b.stepOrder)
-                            .map((step, i) => (
-                                <StepBox key={i} isEven={step.stepOrder % 2 === 0}>
-                                    <StepContentContainer>
-                                        <StepNumber>Step {step.stepOrder}</StepNumber>
-                                        <StepDescription>{step.description}</StepDescription>
-                                    </StepContentContainer>
-
-                                    {step.stepImageData && (
-                                        <StepImageContainer>
-                                            <StepImage
-                                                src={`data:${step.stepImageType};base64,${step.stepImageData}`}
-                                                alt={`Step ${step.stepOrder}`}
-                                            />
-                                        </StepImageContainer>
-                                    )}
-                                </StepBox>
+                        <DocHeader>
+                            <SectionTitle>Ingredients</SectionTitle>
+                        </DocHeader>
+                        <PostContent>
+                            {post.ingredients.map((ing, i) => (
+                                <div key={i}>• {ing}</div>
                             ))}
-                    </InstructionsContent>
+                        </PostContent>
 
+                        <DocHeader>
+                            <SectionTitle>Instructions</SectionTitle>
+                        </DocHeader>
+                        <InstructionsContent>
+                            {post.instructions
+                                .slice()
+                                .sort((a, b) => a.stepOrder - b.stepOrder)
+                                .map((step, i) => (
+                                    <StepBox key={i} isEven={step.stepOrder % 2 === 0}>
+                                        <StepContentContainer>
+                                            <StepNumber>Step {step.stepOrder}</StepNumber>
+                                            <StepDescription>{step.description}</StepDescription>
+                                        </StepContentContainer>
 
-                    <DocFooter>
-                        Recipe ID: {post.postId} • © Your Blog {new Date().getFullYear()}
-                    </DocFooter>
+                                        {step.stepImageData && (
+                                            <StepImageContainer>
+                                                <StepImage
+                                                    src={`data:${step.stepImageType};base64,${step.stepImageData}`}
+                                                    alt={`Step ${step.stepOrder}`}
+                                                />
+                                            </StepImageContainer>
+                                        )}
+                                    </StepBox>
+                                ))}
+                        </InstructionsContent>
 
-                    <PageNumber>1</PageNumber>
+                        <DocFooter>
+                            Recipe ID: {post.postId} • © Your Blog {new Date().getFullYear()}
+                        </DocFooter>
 
-                    <SocialShare>
-                        <SocialButton color="#1877f2"><FaFacebook /></SocialButton>
-                        <SocialButton color="#1da1f2"><FaTwitter /></SocialButton>
-                        <SocialButton color="#e4405f"><FaInstagram /></SocialButton>
-                        <SocialButton><FaArrowUp /></SocialButton>
-                    </SocialShare>
-                </ContentContainer>
+                        <PageNumber>1</PageNumber>
 
-                <ReplyContainer>
-                    <Heading>LEAVE A REPLY</Heading>
-                    <Textarea placeholder="Comment" />
-                    <InputRow>
-                        <Input placeholder="Name" />
-                        <Input placeholder="Email" />
-                    </InputRow>
-                    <CheckboxLabel>
-                        <input type="checkbox" style={{ marginRight: "10px" }} />
-                        Save my name, email, and website in this browser for the next time I comment.
-                    </CheckboxLabel>
-                    <SubmitButton>Post Comment</SubmitButton>
-                </ReplyContainer>
-            </Wrapper>
-        </PostContainer>
+                        <SocialShare>
+                            <SocialButton color="#1877f2"><FaFacebook /></SocialButton>
+                            <SocialButton color="#1da1f2"><FaTwitter /></SocialButton>
+                            <SocialButton color="#e4405f"><FaInstagram /></SocialButton>
+                            <SocialButton><FaArrowUp /></SocialButton>
+                        </SocialShare>
+                    </ContentContainer>
+
+                    <ReplyContainer>
+                        <Heading>LEAVE A REPLY</Heading>
+                        <Textarea placeholder="Comment" />
+                        <SubmitButton>Post Comment</SubmitButton>
+                    </ReplyContainer>
+                </Wrapper>
+            </PostContainer>
+        </MainContent>
     );
 };
 

@@ -286,7 +286,7 @@ const Sidebar = () => {
                         </li>
                         <li
                             className={activeNav === "Contact" ? "active" : ""}
-                            onClick={() => setActiveNav("Contact")}
+                            onClick={() => handleNavClick("Contact", "/app/contact")}
                         >
                             Contact
                         </li>

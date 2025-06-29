@@ -1,10 +1,12 @@
 import React, {useEffect, useState} from "react";
 import styled from "styled-components";
-import { FaUpload, FaPlus, FaTrash, FaCamera } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
-import { createPost } from "../service/posts.js";
+import { FaUpload, FaPlus, FaTrash, FaCamera, FaArrowLeft } from "react-icons/fa";
+import { useNavigate, useParams } from "react-router-dom";
+import { updatePost, fetchPostById } from "../service/posts.js";
 import {fetchCurrentUser} from "../service/users.js";
+import { toast } from "react-toastify";
 
+// Reuse styled components from CreatePostPage
 const CreatePostContainer = styled.div`
     max-width: 100vw;
     max-height: 100vh;
@@ -61,6 +63,26 @@ const FormSubtitle = styled.p`
     font-size: 16px;
 `;
 
+const BackButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+        background-color: #5a6268;
+    }
+`;
+
 const FormSection = styled.div`
     margin-bottom: 30px;
 `;
@@ -88,6 +110,7 @@ const FormGroup = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
+    margin-bottom: 2rem;
 `;
 
 const Label = styled.label`
@@ -111,20 +134,6 @@ const Input = styled.input`
 
     &::placeholder {
         color: #999;
-    }
-`;
-
-const Select = styled.select`
-    padding: 12px 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 16px;
-    background-color: white;
-    transition: border-color 0.3s ease;
-
-    &:focus {
-        outline: none;
-        border-color: #ffd97d;
     }
 `;
 
@@ -259,7 +268,6 @@ const InstructionTextarea = styled(Textarea)`
     box-sizing: border-box;
 `;
 
-
 const StepNumber = styled.span`
     font-weight: bold;
     color: #c8102e;
@@ -326,10 +334,22 @@ const CancelButton = styled.button`
     }
 `;
 
-const CreatePostPage = () => {
+const LoadingContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    font-size: 18px;
+    color: #666;
+`;
+
+const UpdatePostPage = () => {
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const { id } = useParams();
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
+    const [originalPost, setOriginalPost] = useState(null);
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -341,24 +361,6 @@ const CreatePostPage = () => {
         instructions: [{ description: "", stepImage: null }],
         mainImage: null
     });
-
-    useEffect(() => {
-        const loadCurrentUser = async () => {
-            try {
-                const response = await fetchCurrentUser();
-                if (response && response.data) {
-                    setCurrentUser(response.data);
-                }
-            } catch (error) {
-                console.error('Failed to fetch current user:', error);
-                // Optionally redirect to login if user fetch fails
-                navigate('/auth');
-            }
-        };
-
-        loadCurrentUser();
-    }, [navigate]);
-
 
     const [mealCategories] = useState([
         { id: 1, title: "Breakfast" },
@@ -375,6 +377,61 @@ const CreatePostPage = () => {
         { id: 4, title: "Professional" },
         { id: 5, title: "Ultimate" }
     ]);
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setLoading(true);
+
+                // Load current user
+                const userResponse = await fetchCurrentUser();
+                if (userResponse && userResponse.data) {
+                    setCurrentUser(userResponse.data);
+                }
+
+                // Load post data
+                const postResponse = await fetchPostById(id);
+                if (postResponse && postResponse.data) {
+                    const post = postResponse.data;
+                    setOriginalPost(post);
+
+                    // Populate form with existing data
+                    setFormData({
+                        title: post.title || "",
+                        description: post.description || "",
+                        duration: post.duration || "",
+                        cuisine: post.cuisine || "",
+                        mealCateId: post.mealCate?.id || "",
+                        difficultyCateId: post.difficultyCate?.id || "",
+                        ingredients: post.ingredients && post.ingredients.length > 0
+                            ? post.ingredients.map(ing => ing.ingredientContent || ing)
+                            : [""],
+                        instructions: post.instructions && post.instructions.length > 0
+                            ? post.instructions.map((inst) => {  // Remove the index parameter
+                                return {
+                                    description: inst.description || "",
+                                    stepImage: null,
+                                    existingImageData: inst.stepImageData,
+                                    existingImageType: inst.stepImageType
+                                };
+                            })
+                            : [{ description: "", stepImage: null }],
+                        mainImage: null
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load post data:', error);
+                toast.error('Failed to load post data');
+                navigate('/app');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            loadData();
+        }
+    }, [id, navigate]);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
@@ -447,11 +504,11 @@ const CreatePostPage = () => {
         e.preventDefault();
 
         if (!currentUser || !currentUser.id) {
-            alert('User information not loaded. Please try again.');
+            toast.error('User information not loaded. Please try again.');
             return;
         }
 
-        setLoading(true);
+        setSubmitting(true);
 
         try {
             const submitData = new FormData();
@@ -460,6 +517,8 @@ const CreatePostPage = () => {
             submitData.append('description', formData.description);
             submitData.append('duration', formData.duration);
             submitData.append('cuisine', formData.cuisine);
+            submitData.append('mealCateId', formData.mealCateId);
+            submitData.append('difficultyCateId', formData.difficultyCateId);
 
             if (formData.mainImage) {
                 submitData.append('imageFile', formData.mainImage);
@@ -479,52 +538,60 @@ const CreatePostPage = () => {
                 }
             });
 
-            const userId = currentUser.id;
-
-            const response = await createPost(
-                submitData,
-                userId,
-                formData.mealCateId,
-                formData.difficultyCateId
-            );
+            const response = await updatePost(id, submitData);
 
             if (response && response.data) {
-                console.log('Post created successfully:', response.data);
-                navigate('/app/posts');
+                console.log('Post updated successfully:', response.data);
+                toast.success('Post updated successfully!');
+                navigate(`/app/post/${id}`);
             }
         } catch (error) {
-            console.error('Error creating post:', error);
+            console.error('Error updating post:', error);
             if (error.response) {
                 console.error('Response data:', error.response.data);
                 console.error('Response status:', error.response.status);
             }
-            alert('Failed to create post. Please try again.');
+            toast.error('Failed to update post. Please try again.');
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
+    const handleCancel = () => {
+        navigate(`/app/post/${id}`);
+    };
 
-    if (!currentUser) {
+    if (loading) {
         return (
             <CreatePostContainer>
                 <FormContainer>
-                    <FormHeader>
-                        <FormTitle>Loading...</FormTitle>
-                        <FormSubtitle>Please wait while we load your profile</FormSubtitle>
-                    </FormHeader>
+                    <LoadingContainer>Loading post data...</LoadingContainer>
                 </FormContainer>
             </CreatePostContainer>
         );
     }
 
+    if (!originalPost) {
+        return (
+            <CreatePostContainer>
+                <FormContainer>
+                    <LoadingContainer>Post not found</LoadingContainer>
+                </FormContainer>
+            </CreatePostContainer>
+        );
+    }
 
     return (
         <CreatePostContainer>
             <FormContainer>
+                <BackButton onClick={handleCancel}>
+                    <FaArrowLeft />
+                    Back to Post
+                </BackButton>
+
                 <FormHeader>
-                    <FormTitle>Create New Recipe</FormTitle>
-                    <FormSubtitle>Share your delicious recipe with the community</FormSubtitle>
+                    <FormTitle>Update Recipe</FormTitle>
+                    <FormSubtitle>Edit your recipe details</FormSubtitle>
                 </FormHeader>
 
                 <form onSubmit={handleSubmit}>
@@ -567,30 +634,22 @@ const CreatePostPage = () => {
 
                         <FormRow>
                             <FormGroup>
-                                <Label>Meal Category *</Label>
-                                <Select
-                                    value={formData.mealCateId}
-                                    onChange={(e) => handleInputChange('mealCateId', e.target.value)}
-                                    required
-                                >
-                                    <option value="">Select category...</option>
-                                    {mealCategories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.title}</option>
-                                    ))}
-                                </Select>
+                                <Label>Meal Category</Label>
+                                <Input
+                                    type="text"
+                                    value={mealCategories.find(cat => cat.id === formData.mealCateId)?.title || 'Not selected'}
+                                    readOnly
+                                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                                />
                             </FormGroup>
                             <FormGroup>
-                                <Label>Difficulty Level *</Label>
-                                <Select
-                                    value={formData.difficultyCateId}
-                                    onChange={(e) => handleInputChange('difficultyCateId', e.target.value)}
-                                    required
-                                >
-                                    <option value="">Select difficulty...</option>
-                                    {difficultyCategories.map(diff => (
-                                        <option key={diff.id} value={diff.id}>{diff.title}</option>
-                                    ))}
-                                </Select>
+                                <Label>Difficulty Level</Label>
+                                <Input
+                                    type="text"
+                                    value={difficultyCategories.find(diff => diff.id === formData.difficultyCateId)?.title || 'Not selected'}
+                                    readOnly
+                                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                                />
                             </FormGroup>
                         </FormRow>
 
@@ -609,19 +668,26 @@ const CreatePostPage = () => {
                     <FormSection>
                         <SectionTitle>Recipe Image</SectionTitle>
                         <ImageUploadArea
-                            hasImage={formData.mainImage}
+                            hasImage={formData.mainImage || originalPost.imageData}
                             onClick={() => document.getElementById('mainImageInput').click()}
                         >
                             <FaCamera size={48} color="#ffd97d" />
-                            <UploadText>Click to upload main recipe image</UploadText>
+                            <UploadText>Click to upload new recipe image</UploadText>
                             <UploadText style={{fontSize: '12px', color: '#888', marginTop: '5px'}}>
                                 Recommended: 800x600px, JPEG format, under 150KB
                             </UploadText>
-                            {formData.mainImage && (
+                            {formData.mainImage ? (
                                 <ImagePreview>
                                     <PreviewImage
                                         src={URL.createObjectURL(formData.mainImage)}
                                         alt="Preview"
+                                    />
+                                </ImagePreview>
+                            ) : originalPost.imageData && (
+                                <ImagePreview>
+                                    <PreviewImage
+                                        src={`data:${originalPost.imageType};base64,${originalPost.imageData}`}
+                                        alt="Current Image"
                                     />
                                 </ImagePreview>
                             )}
@@ -635,6 +701,7 @@ const CreatePostPage = () => {
                         />
                     </FormSection>
 
+                    {/* Ingredients */}
                     <FormSection>
                         <SectionTitle>Ingredients</SectionTitle>
                         <IngredientsContainer>
@@ -642,19 +709,22 @@ const CreatePostPage = () => {
                                 <IngredientRow key={index}>
                                     <IngredientInput
                                         type="text"
-                                        placeholder={`Ingredient ${index + 1}...`}
+                                        placeholder={`Ingredient ${index + 1}`}
                                         value={ingredient}
                                         onChange={(e) => handleIngredientChange(index, e.target.value)}
                                     />
                                     {formData.ingredients.length > 1 && (
-                                        <RemoveButton onClick={() => removeIngredient(index)}>
-                                            <FaTrash size={12} />
+                                        <RemoveButton
+                                            type="button"
+                                            onClick={() => removeIngredient(index)}
+                                        >
+                                            <FaTrash />
                                         </RemoveButton>
                                     )}
                                 </IngredientRow>
                             ))}
                             <AddButton type="button" onClick={addIngredient}>
-                                <FaPlus size={12} />
+                                <FaPlus />
                                 Add Ingredient
                             </AddButton>
                         </IngredientsContainer>
@@ -668,8 +738,11 @@ const CreatePostPage = () => {
                                 <InstructionHeader>
                                     <StepNumber>Step {index + 1}</StepNumber>
                                     {formData.instructions.length > 1 && (
-                                        <RemoveButton onClick={() => removeInstruction(index)}>
-                                            <FaTrash size={12} />
+                                        <RemoveButton
+                                            type="button"
+                                            onClick={() => removeInstruction(index)}
+                                        >
+                                            <FaTrash />
                                         </RemoveButton>
                                     )}
                                 </InstructionHeader>
@@ -679,26 +752,28 @@ const CreatePostPage = () => {
                                     onChange={(e) => handleInstructionChange(index, 'description', e.target.value)}
                                 />
                                 <InstructionImageUpload
-                                    onClick={() => document.getElementById(`stepImage_${index}`).click()}
+                                    onClick={() => document.getElementById(`stepImage${index}`).click()}
                                 >
-                                    <FaUpload color="#ffd97d" />
-                                    <UploadText>
-                                        {instruction.stepImage ? 'Change step image' : 'Upload step image (optional)'}
-                                    </UploadText>
-                                    <UploadText style={{fontSize: '12px', color: '#888', marginTop: '5px'}}>
-                                        Recommended: 660x330px, JPEG format, under 150KB
-                                    </UploadText>
-                                    {instruction.stepImage && (
+                                    <FaUpload size={24} color="#ffd97d" />
+                                    <UploadText>Upload step image (optional)</UploadText>
+                                    {instruction.stepImage ? (
                                         <ImagePreview>
                                             <PreviewImage
                                                 src={URL.createObjectURL(instruction.stepImage)}
                                                 alt={`Step ${index + 1}`}
                                             />
                                         </ImagePreview>
+                                    ) : instruction.existingImageData && (
+                                        <ImagePreview>
+                                            <PreviewImage
+                                                src={`data:${instruction.existingImageType};base64,${instruction.existingImageData}`}
+                                                alt={`Step ${index + 1}`}
+                                            />
+                                        </ImagePreview>
                                     )}
                                 </InstructionImageUpload>
                                 <input
-                                    id={`stepImage_${index}`}
+                                    id={`stepImage${index}`}
                                     type="file"
                                     accept="image/*"
                                     style={{ display: 'none' }}
@@ -707,18 +782,18 @@ const CreatePostPage = () => {
                             </InstructionCard>
                         ))}
                         <AddButton type="button" onClick={addInstruction}>
-                            <FaPlus size={12} />
+                            <FaPlus />
                             Add Step
                         </AddButton>
                     </FormSection>
 
                     {/* Submit Section */}
                     <SubmitSection>
-                        <CancelButton type="button" onClick={() => navigate('/app')}>
+                        <CancelButton type="button" onClick={handleCancel}>
                             Cancel
                         </CancelButton>
-                        <SubmitButton type="submit" disabled={loading}>
-                            {loading ? 'Creating...' : 'Create Recipe'}
+                        <SubmitButton type="submit" disabled={submitting}>
+                            {submitting ? 'Updating...' : 'Update Recipe'}
                         </SubmitButton>
                     </SubmitSection>
                 </form>
@@ -727,4 +802,4 @@ const CreatePostPage = () => {
     );
 };
 
-export default CreatePostPage;
+export default UpdatePostPage;

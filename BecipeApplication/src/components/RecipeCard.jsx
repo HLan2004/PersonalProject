@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import styled from "styled-components";
 import {FaHeart, FaClock, FaRegHeart, FaUtensils} from "react-icons/fa";
-import {likePost, fetchFilteredPosts} from "../service/posts.js";
+import {likePost, fetchFilteredPosts, fetchPostsFromFollowedUsers} from "../service/posts.js";
 import {useNavigate} from "react-router-dom";
 
 const GridContainer = styled.div`
@@ -63,8 +63,6 @@ const ImageContainer = styled.div`
     justify-content: center;
     border: 2px solid #ffd97d;
 `;
-
-
 
 const CategoryBadge = styled.span`
     background: #f5b800;
@@ -200,7 +198,6 @@ const RecipeCardBlog = ({ recipe, onLikeUpdate, selectionMode, isSelected, onSel
         onSelect(recipe.postId);
     };
 
-
     return (
         <Card
             onClick={handleCardClick}
@@ -236,7 +233,6 @@ const RecipeCardBlog = ({ recipe, onLikeUpdate, selectionMode, isSelected, onSel
     );
 }
 
-
 const RecipeCard = ({ posts = null, selectionMode = false, selectedPosts = new Set(), onPostSelect }) => {
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -260,17 +256,33 @@ const RecipeCard = ({ posts = null, selectionMode = false, selectedPosts = new S
         // Only fetch if no posts prop is provided (for general use)
         if (posts) return;
 
+        console.log('Filter changed:', filters); // Debug log
+
         setLoading(true);
         setError(null);
+
         try {
-            const response = await fetchFilteredPosts(
-                filters.mealCategory || null,
-                filters.difficultyCategory || null
-            );
+            let response;
+
+            // Check if "Following Only" is enabled
+            if (filters.showFollowingOnly) {
+                console.log('Fetching posts from followed users only'); // Debug log
+                response = await fetchPostsFromFollowedUsers();
+                console.log('Following posts response:', response.data); // Debug log
+            } else {
+                // Use existing logic for other filters
+                console.log('Fetching regular posts with filters'); // Debug log
+                response = await fetchFilteredPosts(
+                    filters.mealCategory || null,
+                    filters.difficultyCategory || null
+                );
+            }
+
             setRecipes(response.data);
         } catch (error) {
             console.error('Failed to fetch filtered posts:', error);
             setError('Failed to load posts. Please try again.');
+            setRecipes([]); // Set empty array on error
         } finally {
             setLoading(false);
         }
@@ -283,20 +295,24 @@ const RecipeCard = ({ posts = null, selectionMode = false, selectedPosts = new S
             return;
         }
 
-        // Otherwise, use the filter system
+        // Initialize the global filter state if it doesn't exist
         if (!window.recipeFilters) {
             window.recipeFilters = {
                 mealCategory: '',
                 difficultyCategory: '',
+                showFollowingOnly: false,
                 listeners: []
             };
         }
 
+        // Add this component's filter handler to the listeners
         window.recipeFilters.listeners.push(handleFilterChange);
 
+        // Initial load with current filter state
         handleFilterChange({
             mealCategory: window.recipeFilters.mealCategory,
-            difficultyCategory: window.recipeFilters.difficultyCategory
+            difficultyCategory: window.recipeFilters.difficultyCategory,
+            showFollowingOnly: window.recipeFilters.showFollowingOnly
         });
 
         // Cleanup on unmount
@@ -330,7 +346,10 @@ const RecipeCard = ({ posts = null, selectionMode = false, selectedPosts = new S
                     padding: '40px 20px',
                     color: '#666'
                 }}>
-                    No recipes found matching your filters.
+                    {window.recipeFilters?.showFollowingOnly
+                        ? "No posts from users you follow."
+                        : "No recipes found matching your filters."
+                    }
                 </div>
             )}
         </GridContainer>

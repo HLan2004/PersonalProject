@@ -14,7 +14,9 @@ import { isAuthenticated, logout } from "./service/auth";
 import activityTracker from "./service/activityTracker";
 import UserRecipePage from "./page/UserRecipePage";
 import UserPage from "./page/UserPage.jsx";
-import UpdateUserPage from "./page/UpdateUserPage.jsx";
+import UpdateUserPage from "./page/UpdateUserPage";
+import UpdatePostPage from "./page/UpdatePostPage";
+import ContactPage from "./page/ContactPage";
 
 const AppContainer = styled.div`
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -37,13 +39,6 @@ const MainContent = styled.main`
     opacity: ${({ isBlurred }) => (isBlurred ? 0.7 : 1)};
     transition: filter 0.3s ease-in-out, opacity 0.3s ease-in-out;
 `;
-
-function ProtectedRoute({ children }) {
-    if (!isAuthenticated()) {
-        return <Navigate to="/auth" replace />;
-    }
-    return children;
-}
 
 function Layout() {
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
@@ -123,6 +118,8 @@ function App() {
                 <Route path="profile" element={<UserPage />} />
                 <Route path="profile/edit" element={<UpdateUserPage />} />
                 <Route path="/app/user/:userId" element={<UserPage />} />
+                <Route path="update-post/:id" element={<UpdatePostPage />} />
+                <Route path="contact" element={<ContactPage/>} />
             </Route>
 
             <Route
