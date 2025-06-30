@@ -228,4 +228,31 @@ public class PostController {
                     .body("An unexpected error occurred: " + e.getMessage());
         }
     }
+
+    @GetMapping("/following")
+    public ResponseEntity<?> getPostsFromFollowedUsers() {
+        try {
+            User currentUser = (User) SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("User not authenticated");
+            }
+
+            List<PostDto> list = postService.getPostsFromFollowedUsers();
+            return ResponseEntity.ok(list);
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Authentication required: " + e.getMessage());
+
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred");
+        }
+    }
 }

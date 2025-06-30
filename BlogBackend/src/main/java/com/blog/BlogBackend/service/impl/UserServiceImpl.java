@@ -25,7 +25,9 @@ public class UserServiceImpl implements UserService {
     public UserDto updateProfile(UserDto userDto) {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        currentUser.setAbout(userDto.getAbout());
+        if (userDto.getAbout() != null) {
+            currentUser.setAbout(userDto.getAbout());
+        }
 
         MultipartFile imageFile = userDto.getImageFile();
         if (imageFile != null && !imageFile.isEmpty()) {

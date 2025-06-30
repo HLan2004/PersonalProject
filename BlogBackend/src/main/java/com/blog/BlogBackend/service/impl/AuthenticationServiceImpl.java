@@ -64,6 +64,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
 
     public User signup(RegisterDto input, MultipartFile imageFile) {
+        if (userRepository.existsByUsername(input.getUsername())) {
+            throw new RuntimeException("Username already exists: " + input.getUsername());
+        }
+
         User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()),input.getAbout());
 
         if (imageFile != null && !imageFile.isEmpty()) {

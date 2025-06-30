@@ -35,5 +35,7 @@ public interface PostRepo extends JpaRepository<Post, Long> {
             @Param("difficultyCate") DifficultyCate difficultyCate);
 
 
-
+    @Query("SELECT p FROM Post p WHERE p.user IN " +
+            "(SELECT f.following FROM Follow f WHERE f.follower = :currentUser)")
+    List<Post> findPostsByFollowedUsers(@Param("currentUser") User currentUser);
 }

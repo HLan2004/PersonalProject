@@ -30,4 +30,5 @@ public interface PostService {
 
    List<PostDto> getUserPostsByMealCategory(Long userId, Long mealCategoryId);
 
+   List<PostDto> getPostsFromFollowedUsers();
 }

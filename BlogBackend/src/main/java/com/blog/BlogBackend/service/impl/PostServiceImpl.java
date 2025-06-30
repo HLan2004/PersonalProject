@@ -18,12 +18,14 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -119,11 +121,14 @@ public class PostServiceImpl implements PostService {
         post.getIngredients().clear();
         post.getIngredients().addAll(dto.getIngredients());
 
+        Map<Integer, Instruction> existingInstructions = post.getInstructions().stream()
+                .collect(Collectors.toMap(Instruction::getStepOrder, Function.identity()));
+
         post.getInstructions().clear();
         dto.getInstructions().forEach(idto -> {
             Instruction i = new Instruction();
             i.setStepDescription(idto.getDescription());
-            i.setStepOrder     (idto.getStepOrder());
+            i.setStepOrder(idto.getStepOrder());
             i.setPost(post);
 
             MultipartFile stepImage = idto.getImageFile();
@@ -134,11 +139,18 @@ public class PostServiceImpl implements PostService {
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to read instruction image", e);
                 }
+            } else {
+                Instruction existingInstruction = existingInstructions.get(idto.getStepOrder());
+                if (existingInstruction != null) {
+                    i.setStepImageData(existingInstruction.getStepImageData());
+                    i.setStepImageType(existingInstruction.getStepImageType());
+                }
             }
 
             post.getInstructions().add(i);
         });
 
+        // Handle main image
         MultipartFile mainImage = dto.getImageFile();
         if (mainImage != null && !mainImage.isEmpty()) {
             try {
@@ -281,6 +293,22 @@ public class PostServiceImpl implements PostService {
 
         List<Post> posts = postRepo.findByUserAndMealCate(user, mealCate);
 
+        return posts.stream()
+                .map(this::PostToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PostDto> getPostsFromFollowedUsers() {
+        User currentUser = (User) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if (currentUser == null) {
+            throw new IllegalStateException("User not authenticated");
+        }
+
+        List<Post> posts = postRepo.findPostsByFollowedUsers(currentUser);
         return posts.stream()
                 .map(this::PostToDto)
                 .collect(Collectors.toList());

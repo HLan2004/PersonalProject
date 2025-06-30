@@ -14,5 +14,6 @@ public interface UserRepo extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.username LIKE %:username% AND u.enabled = true")
     List<User> findByUsernameContainingIgnoreCase(@Param("username") String username);
 
+    boolean existsByUsername(String username);
 
 }
